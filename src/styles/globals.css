@@ -123,3 +123,71 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom animations for loading states */
+@keyframes loading-bar {
+  0% {
+    width: 0%;
+    opacity: 0.6;
+  }
+  50% {
+    width: 70%;
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes connection-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgb(var(--primary) / 0);
+  }
+}
+
+.loading-bar {
+  animation: loading-bar 2s ease-in-out infinite;
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.connection-pulse {
+  animation: connection-pulse 2s infinite;
+}

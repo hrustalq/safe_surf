@@ -14,17 +14,6 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-}
 
 // Necessary for Next auth
 model Account {
@@ -60,9 +49,14 @@ model User {
     email         String?   @unique
     emailVerified DateTime?
     image         String?
+    password      String?
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
+    subscriptions Subscription[]
+    passwordResetTokens PasswordResetToken[]
+    xUIClientId   String?   // 3x-ui client identifier
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
 }
 
 model VerificationToken {
@@ -71,4 +65,84 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+    id        String   @id @default(cuid())
+    token     String   @unique @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    expires   DateTime
+    createdAt DateTime @default(now())
+    
+    @@index([userId])
+    @@index([token])
+}
+
+// VPN Service Models
+
+model VpnPlan {
+    id              String        @id @default(cuid())
+    name            String        // e.g., "Basic", "Premium", "Professional"
+    nameRu          String        // Russian name for the plan
+    description     String        // Plan description
+    descriptionRu   String        // Russian description
+    features        String        // JSON array of features
+    featuresRu      String        // Russian features
+    price           Decimal       // Monthly price
+    currency        String        @default("USD")
+    durationDays    Int          // Plan duration in days
+    maxDevices      Int          // Max simultaneous connections
+    maxBandwidth    BigInt?      // Monthly bandwidth limit in bytes (null = unlimited)
+    protocols       String       // JSON array of supported protocols (vless, vmess, etc.)
+    isActive        Boolean      @default(true)
+    sortOrder       Int          @default(0)
+    createdAt       DateTime     @default(now())
+    updatedAt       DateTime     @updatedAt
+    subscriptions   Subscription[]
+}
+
+model Subscription {
+    id              String           @id @default(cuid())
+    userId          String
+    planId          String
+    status          SubscriptionStatus
+    startDate       DateTime         @default(now())
+    endDate         DateTime
+    isActive        Boolean          @default(true)
+    paymentId       String?          // External payment system reference
+    xUIInboundId    String?          // 3x-ui inbound identifier
+    connectionInfo  String?          // JSON with connection details (configs, keys, etc.)
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    
+    user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    plan            VpnPlan          @relation(fields: [planId], references: [id])
+    
+    @@index([userId])
+    @@index([status])
+}
+
+model XUIServer {
+    id            String    @id @default(cuid())
+    name          String    // Server display name
+    location      String    // Server location
+    locationRu    String    // Russian location name
+    host          String    // Server hostname/IP
+    port          Int       @default(54321) // 3x-ui panel port
+    username      String    // 3x-ui admin username
+    password      String    // 3x-ui admin password
+    apiUrl        String    // Full API URL
+    isActive      Boolean   @default(true)
+    maxClients    Int       @default(100) // Maximum clients per server
+    currentLoad   Int       @default(0)   // Current number of active clients
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+}
+
+enum SubscriptionStatus {
+    ACTIVE
+    EXPIRED
+    CANCELLED
+    PENDING
 }

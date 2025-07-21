@@ -1,0 +1,276 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { 
+  Shield, 
+  Zap, 
+  Globe, 
+  Lock, 
+  Wifi, 
+  Server, 
+  Smartphone, 
+  Eye, 
+  Clock, 
+  CheckCircle,
+  Star
+} from "lucide-react";
+
+import { Card } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+
+const mainFeatures = [
+  {
+    title: "Современные протоколы",
+    description: "Поддержка VLESS и VMESS обеспечивает максимальную безопасность и скорость подключения.",
+    icon: Shield,
+    highlights: ["VLESS", "VMESS", "V2Ray", "Shadowsocks"],
+  },
+  {
+    title: "Глобальная сеть серверов",
+    description: "50+ серверов в 25 странах мира для быстрого и стабильного подключения.",
+    icon: Globe,
+    highlights: ["25 стран", "50+ серверов", "99.9% аптайм", "Низкий пинг"],
+  },
+  {
+    title: "Максимальная скорость",
+    description: "Наши серверы поддерживают скорости до 1 Гбит/с без ограничений трафика.",
+    icon: Zap,
+    highlights: ["До 1 Гбит/с", "Безлимитный трафик", "Без дросселирования", "CDN оптимизация"],
+  },
+];
+
+const additionalFeatures = [
+  {
+    title: "Военное шифрование",
+    description: "AES-256 шифрование защищает ваши данные",
+    icon: Lock,
+  },
+  {
+    title: "Kill Switch",
+    description: "Автоматическое отключение при потере VPN",
+    icon: Wifi,
+  },
+  {
+    title: "DNS защита",
+    description: "Блокировка рекламы и вредоносного ПО",
+    icon: Server,
+  },
+  {
+    title: "Мульти-устройства",
+    description: "До 10 одновременных подключений",
+    icon: Smartphone,
+  },
+  {
+    title: "No-Log политика",
+    description: "Мы не ведём логи вашей активности",
+    icon: Eye,
+  },
+  {
+    title: "24/7 поддержка",
+    description: "Круглосуточная техническая поддержка",
+    icon: Clock,
+  },
+];
+
+const protocols = [
+  {
+    name: "VLESS",
+    description: "Новейший протокол с минимальными накладными расходами",
+    features: ["Без шифрования на уровне протокола", "Максимальная производительность", "Поддержка TLS 1.3"],
+    icon: "🔥",
+  },
+  {
+    name: "VMESS",
+    description: "Проверенный протокол с динамическим портом",
+    features: ["Встроенное шифрование", "Динамическая смена портов", "Обфускация трафика"],
+    icon: "⚡",
+  },
+  {
+    name: "V2Ray",
+    description: "Мощная платформа для обхода блокировок",
+    features: ["Маскировка под обычный трафик", "Множественная маршрутизация", "Гибкие правила"],
+    icon: "🛡️",
+  },
+];
+
+export function FeaturesSection() {
+  return (
+    <section id="features" className="py-24 bg-gradient-to-b from-background to-muted/20">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Header */}
+        <motion.div
+          className="mx-auto max-w-2xl text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <Badge className="mb-4" variant="outline">
+            Возможности
+          </Badge>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Почему выбирают SafeSurf?
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Передовые технологии и максимальная безопасность для вашего интернета
+          </p>
+        </motion.div>
+
+        {/* Main Features */}
+        <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {mainFeatures.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6 h-full bg-card hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
+                <motion.div
+                  className="flex items-center gap-3 mb-4"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {feature.title}
+                  </h3>
+                </motion.div>
+                
+                <p className="text-muted-foreground mb-4">
+                  {feature.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-2">
+                  {feature.highlights.map((highlight, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {highlight}
+                    </Badge>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Protocol Section */}
+        <div className="mt-24">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h3 className="text-2xl font-bold text-foreground mb-4">
+              Современные протоколы
+            </h3>
+            <p className="text-muted-foreground">
+              Используем самые передовые технологии для максимальной безопасности
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {protocols.map((protocol, index) => (
+              <motion.div
+                key={protocol.name}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <Card className="p-6 text-center bg-gradient-to-br from-card to-card/50 hover:shadow-xl transition-all duration-300">
+                  <motion.div
+                    className="text-4xl mb-4"
+                    whileHover={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {protocol.icon}
+                  </motion.div>
+                  <h4 className="text-xl font-bold text-foreground mb-2">
+                    {protocol.name}
+                  </h4>
+                  <p className="text-muted-foreground mb-4 text-sm">
+                    {protocol.description}
+                  </p>
+                  <div className="space-y-2">
+                    {protocol.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-primary" />
+                        <span className="text-muted-foreground">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Additional Features Grid */}
+        <div className="mt-24">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h3 className="text-2xl font-bold text-foreground mb-4">
+              Дополнительные возможности
+            </h3>
+            <p className="text-muted-foreground">
+              Всё что нужно для безопасного и комфортного интернета
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {additionalFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5 }}
+              >
+                <Card className="p-6 bg-card/50 backdrop-blur hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2">
+                      <feature.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground text-sm">
+                        {feature.title}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust indicators */}
+        <motion.div
+          className="mt-24 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-6 py-3">
+            <Star className="h-5 w-5 text-primary fill-primary" />
+            <span className="font-semibold text-foreground">4.9/5.0</span>
+            <span className="text-muted-foreground">• 10,000+ довольных клиентов</span>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+} 
