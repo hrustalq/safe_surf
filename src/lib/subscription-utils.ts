@@ -388,7 +388,7 @@ export async function generateSubscriptionConfigs(subscriptionId: string): Promi
         // Calculate limits from subscription plan
         const limits = {
           limitIp: subscription.plan.maxDevices,
-          totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024) : 0, // Convert bytes to GB
+          totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) : 0, // Keep in bytes! (3x-ui expects bytes despite field name)
           expiryTime: subscription.endDate.getTime(),
         };
         

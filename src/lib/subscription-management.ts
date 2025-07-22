@@ -6,7 +6,7 @@ import { env } from "~/env";
 
 export interface SubscriptionLimits {
   limitIp: number;
-  totalGB: number;
+  totalGB: number; // NOTE: Despite the name "totalGB", 3x-ui expects this value in BYTES!
   expiryTime: number;
 }
 
@@ -293,7 +293,7 @@ export async function handleSubscriptionCreation(subscriptionId: string): Promis
     // Calculate limits based on plan
     const limits: SubscriptionLimits = {
       limitIp: subscription.plan.maxDevices, // Use plan's max devices
-      totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024) : 0, // Convert bytes to GB, 0 = unlimited
+      totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) : 0, // Keep in bytes! (3x-ui expects bytes despite field name)
       expiryTime: subscription.endDate.getTime(),
     };
 
@@ -356,7 +356,7 @@ export async function handleSubscriptionUpdate(subscriptionId: string): Promise<
     // Calculate new limits based on updated plan
     const newLimits: SubscriptionLimits = {
       limitIp: subscription.plan.maxDevices, // Use plan's max devices
-      totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024) : 0, // Convert bytes to GB, 0 = unlimited
+      totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) : 0, // Keep in bytes! (3x-ui expects bytes despite field name)
       expiryTime: subscription.endDate.getTime(),
     };
 
