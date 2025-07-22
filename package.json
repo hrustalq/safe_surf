@@ -11,7 +11,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "dev": "next dev --turbo",
+    "dev": "next dev",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "postinstall": "prisma generate",
@@ -56,18 +56,27 @@
     "@trpc/client": "^11.0.0",
     "@trpc/react-query": "^11.0.0",
     "@trpc/server": "^11.0.0",
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.35.1",
+    "axios-retry": "^4.5.0",
     "bcrypt-ts": "^7.1.0",
+    "bullmq": "^5.56.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "do-wrapper": "^4.5.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.6",
     "input-otp": "^1.4.2",
+    "ioredis": "^5.6.1",
     "lucide-react": "^0.525.0",
     "next": "^15.2.3",
     "next-auth": "5.0.0-beta.25",
     "next-themes": "^0.4.6",
+    "node-ssh": "^13.2.1",
+    "otplib": "^12.0.1",
+    "ping": "^0.4.4",
     "react": "^19.0.0",
     "react-day-picker": "^9.8.0",
     "react-dom": "^19.0.0",
@@ -103,5 +112,12 @@
   "ct3aMetadata": {
     "initVersion": "7.39.3"
   },
-  "packageManager": "pnpm@10.5.2"
+  "packageManager": "pnpm@10.5.2",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "cpu-features",
+      "msgpackr-extract",
+      "ssh2"
+    ]
+  }
 }

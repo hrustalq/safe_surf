@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-    provider = "sqlite"
+    provider = "postgresql"
     // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
     // Further reading:
     // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
@@ -22,12 +22,12 @@ model Account {
     type                     String
     provider                 String
     providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
+    refresh_token            String? @db.Text
+    access_token             String? @db.Text
     expires_at               Int?
     token_type               String?
     scope                    String?
-    id_token                 String? // @db.Text
+    id_token                 String? @db.Text
     session_state            String?
     user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
     refresh_token_expires_in Int?
@@ -56,6 +56,12 @@ model User {
     subscriptions Subscription[]
     passwordResetTokens PasswordResetToken[]
     xUIClientId   String?   // 3x-ui client identifier
+    
+    // Multi-Factor Authentication
+    mfaSecret     String?   // TOTP secret
+    mfaEnabled    Boolean   @default(false)
+    backupCodes   String?   // JSON array of backup codes
+    
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
 }
@@ -146,17 +152,44 @@ model XUIServer {
     locationRu    String    // Russian location name (e.g., "Нью-Йорк, США")
     host          String    // Actual server hostname/IP for outbound
     port          Int       @default(443) // Server port for outbound connection
-    protocol      String    @default("vless") // Protocol: vless, vmess, trojan, etc.
-    outboundId    String?   // 3x-ui outbound identifier
-    outboundTag   String?   // 3x-ui outbound tag name
-    security      String    @default("tls") // Security: tls, reality, none
+    protocol      String    @default("vless") // Protocol type (vless, vmess, trojan)
+    outboundId    String?   // 3x-ui outbound ID
+    outboundTag   String?   // 3x-ui outbound tag
+    security      String    @default("tls") // Security layer (tls, reality, none)
     isActive      Boolean   @default(true)
-    maxClients    Int       @default(100) // Maximum clients per outbound
-    currentLoad   Int       @default(0)   // Current number of active clients
-    priority      Int       @default(0)   // Priority for load balancing
+    maxClients    Int       @default(100) // Maximum concurrent clients
+    currentLoad   Int       @default(0) // Current active clients
+    priority      Int       @default(0) // Server priority for load balancing
+    
+    // Digital Ocean Integration
+    digitalOceanDropletId String?            // DO droplet ID
+    digitalOceanRegion    String?            // DO region slug
+    digitalOceanSize      String?            // DO size slug
+    autoProvision        Boolean            @default(false)
+    provisionStatus      ProvisionStatus    @default(MANUAL)
+    lastHealthCheck      DateTime?
+    
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
 }
+
+// Security Event Logging
+model SecurityEvent {
+    id          String          @id @default(cuid())
+    type        String          // Event type (login_success, login_failed, etc.)
+    userId      String?         // User involved (nullable for anonymization)
+    userEmail   String?         // User email (nullable for anonymization)
+    ipAddress   String          // Source IP address
+    userAgent   String          // User agent string
+    details     String?         // JSON details about the event
+    timestamp   DateTime        @default(now())
+    
+    @@index([type])
+    @@index([userId])
+    @@index([timestamp])
+}
+
+// Enums
 
 enum UserRole {
     USER
@@ -169,4 +202,14 @@ enum SubscriptionStatus {
     EXPIRED
     CANCELLED
     PENDING
+}
+
+enum ProvisionStatus {
+    MANUAL          // Manually added server
+    PROVISIONING    // Creating VPS
+    INSTALLING      // Installing V2Ray
+    CONFIGURING     // Setting up configuration
+    READY           // Ready for traffic
+    ERROR           // Provisioning failed
+    DESTROYING      // Being destroyed
 }

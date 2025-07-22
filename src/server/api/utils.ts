@@ -6,6 +6,9 @@ export const paginatedQuerySchema = z.object({
   pageSize: z.number().min(1).max(100).default(10),
 });
 
+// Sort order schema
+export const sortOrderSchema = z.enum(["asc", "desc"]);
+
 // Paginated response wrapper
 export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
   z.object({
@@ -19,6 +22,7 @@ export const paginatedResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) =
 
 // Common types
 export type PaginatedQuery = z.infer<typeof paginatedQuerySchema>;
+export type SortOrder = z.infer<typeof sortOrderSchema>;
 
 export type PaginatedResponse<T> = {
   items: T[];
@@ -47,8 +51,4 @@ export function createPaginatedResponse<T>(
     totalPages,
     hasMore,
   };
-}
-
-// Common sort schemas
-export const sortOrderSchema = z.enum(["asc", "desc"]);
-export const sortBySchema = z.string(); 
+} 

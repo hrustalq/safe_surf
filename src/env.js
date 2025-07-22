@@ -21,6 +21,33 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: z.string().email(),
     YOOKASSA_SHOP_ID: z.string(),
     YOOKASSA_SECRET_KEY: z.string(),
+
+    // Digital Ocean Integration
+    DIGITAL_OCEAN_API_TOKEN: z.string().optional(),
+
+    // 3x-UI Panel Configuration
+    THREEXUI_BASE_URL: z.string().url().optional(),
+    THREEXUI_USERNAME: z.string().optional(),
+    THREEXUI_PASSWORD: z.string().optional(),
+    THREEXUI_SECRET_KEY: z.string().optional(), // For request signing
+
+    // VPS SSH Configuration
+    VPS_SSH_PRIVATE_KEY: z.string().optional(),
+    VPS_SSH_PUBLIC_KEY: z.string().optional(),
+    VPS_SSH_FINGERPRINT: z.string().optional(),
+
+    // Security & Encryption
+    ENCRYPTION_KEY: z.string().length(64).optional(), // 32 bytes in hex
+    JWT_SECRET: z.string().optional(),
+
+    // External Services
+    REDIS_URL: z.string().url().optional(), // For caching/queues
+    UPSTASH_REDIS_REST_URL: z.string().url().optional(), // For rate limiting
+    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
+    // Monitoring (Optional)
+    SENTRY_DSN: z.string().url().optional(),
+    DATADOG_API_KEY: z.string().optional(),
   },
 
   /**
@@ -46,9 +73,36 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
     YOOKASSA_SHOP_ID: process.env.YOOKASSA_SHOP_ID,
     YOOKASSA_SECRET_KEY: process.env.YOOKASSA_SECRET_KEY,
+
+    // Digital Ocean
+    DIGITAL_OCEAN_API_TOKEN: process.env.DIGITAL_OCEAN_API_TOKEN,
+
+    // 3x-UI Panel
+    THREEXUI_BASE_URL: process.env.THREEXUI_BASE_URL,
+    THREEXUI_USERNAME: process.env.THREEXUI_USERNAME,
+    THREEXUI_PASSWORD: process.env.THREEXUI_PASSWORD,
+    THREEXUI_SECRET_KEY: process.env.THREEXUI_SECRET_KEY,
+
+    // SSH
+    VPS_SSH_PRIVATE_KEY: process.env.VPS_SSH_PRIVATE_KEY,
+    VPS_SSH_PUBLIC_KEY: process.env.VPS_SSH_PUBLIC_KEY,
+    VPS_SSH_FINGERPRINT: process.env.VPS_SSH_FINGERPRINT,
+
+    // Security
+    ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+    JWT_SECRET: process.env.JWT_SECRET,
+
+    // External Services
+    REDIS_URL: process.env.REDIS_URL,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+
+    // Monitoring
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    DATADOG_API_KEY: process.env.DATADOG_API_KEY,
   },
   /**
-   * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
+   * Run `build` or `dev` with SKIP_ENV_VALIDATION to skip env validation. This is especially
    * useful for Docker builds.
    */
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

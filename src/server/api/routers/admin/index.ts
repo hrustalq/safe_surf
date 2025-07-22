@@ -5,6 +5,7 @@ import { usersRouter } from "./users";
 import { subscriptionsRouter } from "./subscriptions";
 import { serversRouter } from "./servers";
 import { panelsRouter } from "./panels";
+import { digitalOceanRouter } from "./digital-ocean";
 
 export const adminRouter = createTRPCRouter({
   stats: statsRouter,
@@ -13,4 +14,5 @@ export const adminRouter = createTRPCRouter({
   subscriptions: subscriptionsRouter,
   servers: serversRouter,
   panels: panelsRouter,
+  digitalOcean: digitalOceanRouter,
 }); 
