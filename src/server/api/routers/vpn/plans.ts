@@ -109,7 +109,7 @@ export const plansRouter = createTRPCRouter({
   getFeatured: publicProcedure
     .query(async ({ ctx }) => {
       const plans = await ctx.db.vpnPlan.findMany({
-        where: { isActive: true },
+        where: { isActive: true, name: { not: "Trial" } },
         orderBy: { sortOrder: "asc" },
         take: 3, // Get top 3 featured plans
       });

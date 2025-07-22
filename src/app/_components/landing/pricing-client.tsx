@@ -98,7 +98,7 @@ export function PricingSectionClient({ plans }: PricingSectionClientProps) {
                         className="text-5xl font-bold text-foreground mb-2"
                         whileHover={{ scale: 1.05 }}
                       >
-                        ${plan.price}
+                        RUB{plan.price}
                         <span className="text-xl text-muted-foreground font-normal ml-1">
                           /месяц
                         </span>

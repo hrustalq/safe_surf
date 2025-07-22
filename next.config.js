@@ -22,11 +22,6 @@ const config = {
     
     return config;
   },
-
-  // Add fallbacks for browser environments
-  experimental: {
-    esmExternals: 'loose',
-  },
   
   // Suppress warnings for known binary modules
   transpilePackages: [],

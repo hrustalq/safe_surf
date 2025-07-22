@@ -21,11 +21,8 @@ export async function PricingSection({ plans: propPlans }: PricingSectionProps =
   // Fetch plans from API if not provided as props
   const allPlans = propPlans ?? await api.vpn.plans.getFeatured();
   
-  // Filter out free tier plans (price = 0) and ensure we have paid plans only
-  const paidPlans = allPlans.filter(plan => Number(plan.price) > 0);
-  
   // Sort by price ascending to ensure consistent order
-  const sortedPlans = paidPlans.sort((a, b) => Number(a.price) - Number(b.price));
+  const sortedPlans = allPlans.sort((a, b) => Number(a.price) - Number(b.price));
   
   // Add popular flag to middle plan or Premium plan
   const plansWithPopular = sortedPlans.map((plan, index) => ({
