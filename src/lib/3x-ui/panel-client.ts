@@ -68,31 +68,42 @@ export class ThreeXUIPanelClient extends ThreeXUIClient {
     enabledInbounds: number;
     expiredInbounds: number;
   }> {
-    const inbounds = await this.getInbounds();
-    const now = Date.now();
+    try {
+      const inbounds = await this.getInbounds();
+      const now = Date.now();
 
-    let totalClients = 0;
-    let totalUp = 0;
-    let totalDown = 0;
-    let enabledInbounds = 0;
-    let expiredInbounds = 0;
+      let totalClients = 0;
+      let totalUp = 0;
+      let totalDown = 0;
+      let enabledInbounds = 0;
+      let expiredInbounds = 0;
 
-    for (const inbound of inbounds) {
-      if (inbound.enable) enabledInbounds++;
-      if (inbound.expiryTime > 0 && inbound.expiryTime < now) expiredInbounds++;
-      
-      totalUp += inbound.up || 0;
-      totalDown += inbound.down || 0;
-      totalClients += inbound.settings.clients.length;
+      for (const inbound of inbounds) {
+        if (inbound.enable) enabledInbounds++;
+        if (inbound.expiryTime > 0 && inbound.expiryTime < now) expiredInbounds++;
+        
+        totalUp += inbound.up || 0;
+        totalDown += inbound.down || 0;
+        totalClients += inbound.settings?.clients?.length || 0;
+      }
+
+      return {
+        totalInbounds: inbounds.length,
+        totalClients,
+        totalTraffic: { up: totalUp, down: totalDown },
+        enabledInbounds,
+        expiredInbounds,
+      };
+    } catch (error) {
+      this.log("Error getting inbounds summary", error);
+      return {
+        totalInbounds: 0,
+        totalClients: 0,
+        totalTraffic: { up: 0, down: 0 },
+        enabledInbounds: 0,
+        expiredInbounds: 0,
+      };
     }
-
-    return {
-      totalInbounds: inbounds.length,
-      totalClients,
-      totalTraffic: { up: totalUp, down: totalDown },
-      enabledInbounds,
-      expiredInbounds,
-    };
   }
 
   /**
@@ -184,6 +195,8 @@ export class ThreeXUIPanelClient extends ThreeXUIClient {
       subId: "",
       reset: 0,
       flow: "",
+      comment: "",
+      security: undefined,
     }));
 
     const inboundOptions: InboundOptions = {
@@ -237,6 +250,8 @@ export class ThreeXUIPanelClient extends ThreeXUIClient {
       subId: "",
       reset: 0,
       flow: options.flow ?? "",
+      comment: "",
+      security: undefined,
     }));
 
     const inboundOptions: InboundOptions = {
@@ -290,6 +305,8 @@ export class ThreeXUIPanelClient extends ThreeXUIClient {
       subId: "",
       reset: 0,
       flow: options.flow ?? "",
+      comment: "",
+      security: undefined,
     }));
 
     const inboundOptions: InboundOptions = {
@@ -331,27 +348,75 @@ export class ThreeXUIPanelClient extends ThreeXUIClient {
     expiredClients: ClientWithInbound[];
     connectionStatus: boolean;
   }> {
-    const [serverStatus, inboundsSummary, onlineClients, expiredClients, connectionStatus] = await Promise.all([
-      this.getServerStatus().catch(() => null),
-      this.getInboundsSummary().catch(() => null),
-      this.getOnlineClients().catch(() => []),
-      this.getExpiredClients().catch(() => []),
-      this.testConnection(),
-    ]);
+    try {
+      // Test connection first
+      const connectionStatus = await this.testConnection();
+      
+      if (!connectionStatus) {
+        return {
+          serverStatus: null,
+          inboundsSummary: {
+            totalInbounds: 0,
+            totalClients: 0,
+            totalTraffic: { up: 0, down: 0 },
+            enabledInbounds: 0,
+            expiredInbounds: 0,
+          },
+          onlineClients: [],
+          expiredClients: [],
+          connectionStatus: false,
+        };
+      }
 
-    return {
-      serverStatus,
-      inboundsSummary: inboundsSummary ?? {
-        totalInbounds: 0,
-        totalClients: 0,
-        totalTraffic: { up: 0, down: 0 },
-        enabledInbounds: 0,
-        expiredInbounds: 0,
-      },
-      onlineClients,
-      expiredClients,
-      connectionStatus,
-    };
+      // Try to get data, but don't let individual failures stop the whole process
+      const [serverStatus, inboundsSummary, onlineClients, expiredClients] = await Promise.allSettled([
+        this.getServerStatus().catch((error: unknown) => {
+          this.log("Server status unavailable", error instanceof Error ? error.message : String(error));
+          return null;
+        }),
+        this.getInboundsSummary().catch((error: unknown) => {
+          this.log("Inbounds summary unavailable", error instanceof Error ? error.message : String(error));
+          return null;
+        }),
+        this.getOnlineClients().catch((error: unknown) => {
+          this.log("Online clients unavailable", error instanceof Error ? error.message : String(error));
+          return [];
+        }),
+        this.getExpiredClients().catch((error: unknown) => {
+          this.log("Expired clients unavailable", error instanceof Error ? error.message : String(error));
+          return [];
+        }),
+      ]);
+
+      return {
+        serverStatus: serverStatus.status === 'fulfilled' ? serverStatus.value : null,
+        inboundsSummary: inboundsSummary.status === 'fulfilled' && inboundsSummary.value ? inboundsSummary.value : {
+          totalInbounds: 0,
+          totalClients: 0,
+          totalTraffic: { up: 0, down: 0 },
+          enabledInbounds: 0,
+          expiredInbounds: 0,
+        },
+        onlineClients: onlineClients.status === 'fulfilled' ? onlineClients.value : [],
+        expiredClients: expiredClients.status === 'fulfilled' ? expiredClients.value : [],
+        connectionStatus,
+      };
+    } catch (error) {
+      this.log("Error getting panel info", error);
+      return {
+        serverStatus: null,
+        inboundsSummary: {
+          totalInbounds: 0,
+          totalClients: 0,
+          totalTraffic: { up: 0, down: 0 },
+          enabledInbounds: 0,
+          expiredInbounds: 0,
+        },
+        onlineClients: [],
+        expiredClients: [],
+        connectionStatus: false,
+      };
+    }
   }
 
   /**
@@ -369,6 +434,8 @@ export class ThreeXUIPanelClient extends ThreeXUIClient {
       subId: clientData.subId ?? "",
       reset: clientData.reset ?? 0,
       flow: clientData.flow ?? "",
+      comment: clientData.comment ?? "",
+      security: clientData.security,
     }));
 
     // Add clients one by one (3x-ui doesn't support bulk add in a single request)

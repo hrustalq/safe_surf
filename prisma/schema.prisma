@@ -119,15 +119,26 @@ model Subscription {
     isActive        Boolean          @default(true)
     paymentId       String?          // External payment system reference
     xUIInboundId    String?          // 3x-ui inbound identifier
+    xUIClientEmail  String?          // 3x-ui client email/username
     connectionInfo  String?          // JSON with connection details (configs, keys, etc.)
+    
+    // Current traffic usage (updated from 3x-ui)
+    trafficUsed     BigInt           @default(0) // Total bytes used (up + down)
+    trafficUp       BigInt           @default(0) // Upload bytes
+    trafficDown     BigInt           @default(0) // Download bytes
+    trafficLimit    BigInt?          // Traffic limit in bytes (null = unlimited)
+    lastTrafficSync DateTime?        // Last time traffic was synced from 3x-ui
+    
     createdAt       DateTime         @default(now())
     updatedAt       DateTime         @updatedAt
     
     user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
     plan            VpnPlan          @relation(fields: [planId], references: [id])
+    trafficHistory  ClientTraffic[]
     
     @@index([userId])
     @@index([status])
+    @@index([xUIClientEmail])
 }
 
 // Single 3X-UI Panel Configuration
@@ -171,6 +182,30 @@ model XUIServer {
     
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
+}
+
+// Client Traffic History - tracks usage over time
+model ClientTraffic {
+    id              String       @id @default(cuid())
+    subscriptionId  String
+    xUIInboundId    String       // 3x-ui inbound ID
+    xUIClientEmail  String       // 3x-ui client email/username
+    
+    // Traffic data from 3x-ui API
+    trafficUp       BigInt       // Upload bytes
+    trafficDown     BigInt       // Download bytes
+    trafficTotal    BigInt       // Total bytes (up + down)
+    resetCount      Int          @default(0) // Number of resets
+    
+    // Metadata
+    recordedAt      DateTime     @default(now())
+    source          String       @default("3x-ui") // Data source
+    
+    subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+    
+    @@index([subscriptionId])
+    @@index([xUIClientEmail])
+    @@index([recordedAt])
 }
 
 // Security Event Logging

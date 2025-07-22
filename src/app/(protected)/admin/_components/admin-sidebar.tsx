@@ -9,6 +9,7 @@ import {
   Database,
   UserCheck,
   Monitor,
+  TrendingUp,
 } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -38,6 +39,11 @@ const adminNavItems = [
     title: "3X-UI Панель",
     href: "/admin/panels",
     icon: Monitor,
+  },
+  {
+    title: "Трафик",
+    href: "/admin/traffic",
+    icon: TrendingUp,
   },
   {
     title: "VPN Планы",

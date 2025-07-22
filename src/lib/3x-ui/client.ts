@@ -22,6 +22,7 @@ import {
   type Client,
   type ClientStats,
   type ServerStatus,
+  type OnlineClient,
   type OnlineClients,
 } from "./schemas";
 
@@ -185,9 +186,19 @@ export abstract class ThreeXUIClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
+      const getBodyLength = (body: unknown): number => {
+        if (!body) return 0;
+        if (typeof body === 'string') return body.length;
+        if (body instanceof ArrayBuffer) return body.byteLength;
+        if (body instanceof Uint8Array) return body.length;
+        return -1; // Unknown type
+      };
+
       this.log(`Making request to: ${url}`, {
         method: options.method ?? "GET",
         retries,
+        hasBody: !!options.body,
+        bodyLength: getBodyLength(options.body),
       });
 
       const headers: Record<string, string> = {
@@ -201,6 +212,11 @@ export abstract class ThreeXUIClient {
         headers.Cookie = this.sessionCookie;
       }
 
+      // Always add common headers
+      headers["User-Agent"] ??= "3x-ui-api-client/1.0.0";
+      
+      headers.Accept ??= "application/json, text/plain, */*";
+
       const response = await fetch(url, {
         ...options,
         headers,
@@ -211,23 +227,102 @@ export abstract class ThreeXUIClient {
 
       // Handle session cookie from response
       const setCookie = response.headers.get("set-cookie");
-      if (setCookie?.includes("session")) {
-        this.sessionCookie = setCookie.split(";")[0] ?? null;
-        this.log("Updated session cookie");
+      if (setCookie) {
+        this.log("Set-Cookie header received", setCookie);
+        
+        // Parse cookies properly - split by comma but be careful of expires dates
+        const cookies = setCookie.split(/,(?=\s*\w+=)/);
+        
+        // Look for common 3X-UI session cookie names
+        const sessionCookie = cookies.find(cookie => {
+          const trimmed = cookie.trim().toLowerCase();
+          return trimmed.startsWith('session=') || 
+                 trimmed.startsWith('3x-ui=') ||
+                 trimmed.startsWith('xui=');
+        });
+        
+        if (sessionCookie) {
+          // Extract just the session cookie (remove path, expires, etc.)
+          this.sessionCookie = sessionCookie.split(';')[0]?.trim() ?? null;
+          this.log("Found 3X-UI session cookie", this.sessionCookie);
+        } else {
+          // Look for any other potential session cookies as fallback
+          const fallbackCookie = cookies.find(cookie => {
+            const trimmed = cookie.trim().toLowerCase();
+            return trimmed.includes('session') || 
+                   trimmed.includes('jsessionid') ||
+                   trimmed.includes('connect.sid') ||
+                   trimmed.includes('ui') ||
+                   trimmed.includes('auth');
+          });
+          
+          if (fallbackCookie) {
+            this.sessionCookie = fallbackCookie.split(';')[0]?.trim() ?? null;
+            this.log("Found fallback session cookie", this.sessionCookie);
+          } else {
+            this.log("No session cookie found in response");
+            this.sessionCookie = null;
+          }
+        }
       }
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new ThreeXUIAuthError(`Authentication failed: ${response.status}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        
+        if (response.status === 401) {
+          throw new ThreeXUIAuthError(`Authentication failed (401): ${errorText}`);
         }
+        if (response.status === 403) {
+          throw new ThreeXUIAuthError(`Access forbidden (403): ${errorText}`);
+        }
+        if (response.status === 404) {
+          throw new ThreeXUIError(`API endpoint not found (404): ${url}`);
+        }
+        if (response.status >= 500) {
+          throw new ThreeXUIError(`Server error (${response.status}): ${errorText}`);
+        }
+        
         throw new ThreeXUIError(
-          `HTTP ${response.status}: ${response.statusText}`,
+          `HTTP ${response.status}: ${errorText || response.statusText}`,
           response.status
         );
       }
 
-      const data = await response.json() as z.infer<T>;
-      this.log(`Response received`, { status: response.status });
+      // Get the response text first to handle empty responses
+      const responseText = await response.text();
+      this.log(`Response received`, { 
+        status: response.status, 
+        contentType: response.headers.get('content-type'),
+        hasContent: responseText.length > 0
+      });
+
+      if (!responseText.trim()) {
+        this.log("Empty response received");
+        const contentType = response.headers.get('content-type') ?? '';
+        
+        // Some 3X-UI endpoints legitimately return empty responses
+        if (contentType.includes('text/plain') || contentType.includes('text/html')) {
+          this.log("Handling empty text response as empty data");
+          // Return a basic success response for empty text responses
+          const emptyResponse = { success: true, msg: "", obj: null };
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return responseSchema.parse(emptyResponse) as z.infer<T>;
+        }
+        
+        throw new ThreeXUIError("Empty response from server");
+      }
+
+      let data: unknown;
+      try {
+        data = JSON.parse(responseText) as z.infer<T>;
+      } catch (parseError) {
+        this.log("JSON parse error", { responseText, error: parseError });
+        throw new ThreeXUIError(`Invalid JSON response: ${responseText.substring(0, 200)}`);
+      }
+      
+      if (this.config.debug) {
+        this.log(`Raw response data:`, data);
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return responseSchema.parse(data) as z.infer<T>;
@@ -240,8 +335,11 @@ export abstract class ThreeXUIClient {
 
       // Handle network errors with retry
       if (retries < this.config.maxRetries) {
-        this.log(`Request failed, retrying (${retries + 1}/${this.config.maxRetries})`);
-        await this.delay(this.config.retryDelay * (retries + 1));
+        this.log(`Request failed, retrying (${retries + 1}/${this.config.maxRetries})`, {
+          error: error instanceof Error ? error.message : String(error),
+          endpoint
+        });
+        await this.delay(this.config.retryDelay * Math.pow(2, retries)); // Exponential backoff
         return this.makeRequest(endpoint, responseSchema, options, retries + 1);
       }
 
@@ -288,20 +386,43 @@ export abstract class ThreeXUIClient {
         password: this.config.password,
       });
 
+      // First clear any existing session
+      this.sessionCookie = null;
+
       const response = await this.makeRequest(
         "/login",
         LoginResponseSchema,
         {
           method: "POST",
           body: JSON.stringify(loginData),
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
         }
       );
 
+      this.log("Login response received", { 
+        success: response.success, 
+        message: response.msg,
+        hasObj: response.obj !== undefined,
+        objValue: response.obj
+      });
+
       if (!response.success) {
-        throw new ThreeXUIAuthError(response.msg || "Authentication failed");
+        const errorMsg = response.msg || "Authentication failed";
+        this.log("Authentication failed", errorMsg);
+        throw new ThreeXUIAuthError(errorMsg);
       }
 
-      this.log("Authentication successful");
+      // Verify we have a session cookie after successful login
+      if (!this.sessionCookie) {
+        this.log("Warning: Login succeeded but no session cookie received - this might still work");
+        // Don't throw error here - some 3X-UI installations might work differently
+        // The session might be handled server-side without cookies
+      }
+
+      this.log("Authentication successful with session cookie");
     } catch (error) {
       this.sessionCookie = null;
       this.log("Authentication failed", error);
@@ -314,7 +435,10 @@ export abstract class ThreeXUIClient {
    */
   protected async ensureAuthenticated(): Promise<void> {
     if (!this.sessionCookie) {
+      this.log("No session cookie found, authenticating...");
       await this.authenticate();
+    } else {
+      this.log("Using existing session cookie");
     }
   }
 
@@ -352,18 +476,26 @@ export abstract class ThreeXUIClient {
     } catch (error) {
       // If auth error, clear session and retry once
       if (error instanceof ThreeXUIAuthError) {
-        this.log("Auth error, clearing session and retrying");
+        this.log("Auth error detected, clearing session and retrying once");
         this.sessionCookie = null;
-        await this.ensureAuthenticated();
+        this.clearCache(); // Clear cache on auth failure
         
-        const data = await this.makeRequest(endpoint, responseSchema, options);
-        
-        if (cacheKey) {
-          this.setCache(cacheKey, data, cacheTTL);
+        try {
+          await this.ensureAuthenticated();
+          
+          const data = await this.makeRequest(endpoint, responseSchema, options);
+          
+          if (cacheKey) {
+            this.setCache(cacheKey, data, cacheTTL);
+          }
+          
+          this.log("Request successful after re-authentication");
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return data as z.infer<T>;
+        } catch (retryError) {
+          this.log("Retry after re-authentication failed", retryError);
+          throw retryError;
         }
-        
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        return data as z.infer<T>;
       }
       throw error;
     }
@@ -376,9 +508,14 @@ export abstract class ThreeXUIClient {
    */
   async testConnection(): Promise<boolean> {
     try {
+      this.log("Testing connection");
+      // Clear any existing session for a clean test
+      this.sessionCookie = null;
       await this.authenticate();
+      this.log("Connection test successful");
       return true;
-    } catch {
+    } catch (error) {
+      this.log("Connection test failed", error);
       return false;
     }
   }
@@ -387,37 +524,77 @@ export abstract class ThreeXUIClient {
    * Get all inbounds
    */
   async getInbounds(useCache = true): Promise<Inbound[]> {
-    const response = await this.makeAuthenticatedRequest(
-      "/panel/api/inbounds/list",
-      GetInboundsResponseSchema,
-      { method: "POST" },
-      useCache
-    );
+        try {
+      this.log("Fetching inbounds list");
+      
+      // Clear cache for fresh data after method change
+      if (!useCache) {
+        this.clearCache("/panel/api/inbounds/list");
+      }
+      
+      const response = await this.makeAuthenticatedRequest(
+        "/panel/api/inbounds/list",
+        GetInboundsResponseSchema,
+        { method: "GET" },
+        useCache
+      );
 
-    if (!response.obj) {
+        this.log("Inbounds response received", { success: response.success, hasObj: !!response.obj });
+
+      if (!response.success) {
+        this.log("Inbounds request failed", response.msg);
+        // Don't throw error, return empty array instead for better resilience
+        return [];
+      }
+
+      if (!response.obj || !Array.isArray(response.obj)) {
+        this.log("No inbounds found or invalid response format");
+        return [];
+      }
+
+      // Parse raw inbounds to typed inbounds
+      const parsedInbounds = response.obj
+        .filter(inbound => inbound && typeof inbound === 'object')
+        .map((rawInbound, index) => {
+          try {
+            return parseRawInbound(rawInbound);
+          } catch (error) {
+            this.log(`Failed to parse inbound at index ${index}`, error);
+            return null;
+          }
+        })
+        .filter((inbound): inbound is Inbound => inbound !== null);
+
+      this.log(`Successfully parsed ${parsedInbounds.length} inbounds`);
+      return parsedInbounds;
+    } catch (error) {
+      this.log("Error in getInbounds", error);
+      // Return empty array instead of throwing for better resilience
       return [];
     }
-
-    // Parse raw inbounds to typed inbounds
-    return response.obj.map(parseRawInbound);
   }
 
   /**
    * Get specific inbound by ID
    */
   async getInbound(id: number, useCache = true): Promise<Inbound | null> {
-    const response = await this.makeAuthenticatedRequest(
-      `/panel/api/inbounds/get/${id}`,
-      GetInboundResponseSchema,
-      { method: "GET" },
-      useCache
-    );
+    try {
+      const response = await this.makeAuthenticatedRequest(
+        `/panel/api/inbounds/get/${id}`,
+        GetInboundResponseSchema,
+        { method: "GET" },
+        useCache
+      );
 
-    if (!response.obj) {
+      if (!response.success || !response.obj) {
+        return null;
+      }
+
+      return parseRawInbound(response.obj);
+    } catch (error) {
+      this.log(`Error fetching inbound ${id}`, error);
       return null;
     }
-
-    return parseRawInbound(response.obj);
   }
 
   /**
@@ -637,14 +814,24 @@ export abstract class ThreeXUIClient {
    * Get client statistics
    */
   async getClientStats(clientEmail: string, useCache = true): Promise<ClientStats | null> {
-    const response = await this.makeAuthenticatedRequest(
-      `/panel/api/inbounds/clientStat/${clientEmail}`,
-      GetClientStatsResponseSchema,
-      { method: "GET" },
-      useCache
-    );
+    try {
+      const response = await this.makeAuthenticatedRequest(
+        `/panel/api/inbounds/clientStat/${encodeURIComponent(clientEmail)}`,
+        GetClientStatsResponseSchema,
+        { method: "GET" },
+        useCache
+      );
 
-    return response.obj || null;
+      if (!response.success) {
+        this.log(`Client stats request failed for ${clientEmail}`, response.msg);
+        return null;
+      }
+
+      return response.obj ?? null;
+    } catch (error) {
+      this.log(`Error fetching client stats for ${clientEmail}`, error);
+      return null;
+    }
   }
 
   /**
@@ -658,22 +845,54 @@ export abstract class ThreeXUIClient {
       useCache
     );
 
-    return response.obj?.ips || [];
+    return response.obj?.ips ?? [];
   }
 
   /**
    * Get online clients
    */
   async getOnlineClients(useCache = true): Promise<OnlineClients> {
-    const response = await this.makeAuthenticatedRequest(
-      "/panel/api/inbounds/onlines",
-      GetOnlineClientsResponseSchema,
-      { method: "POST" },
-      useCache,
-      60 // Cache for 1 minute only for online status
-    );
+    try {
+      const response = await this.makeAuthenticatedRequest(
+        "/panel/api/inbounds/onlines",
+        GetOnlineClientsResponseSchema,
+        { method: "GET" },
+        useCache,
+        60 // Cache for 1 minute only for online status
+      );
 
-    return response.obj || [];
+      if (!response.success) {
+        this.log("Online clients request failed", response.msg);
+        return [];
+      }
+
+      const onlineData = response.obj ?? [];
+      
+      // Handle different response formats
+      if (Array.isArray(onlineData)) {
+        // If it's an array of strings (just usernames), convert to objects
+        if (onlineData.length > 0 && typeof onlineData[0] === 'string') {
+          this.log("Converting string array to online client objects");
+          return (onlineData as string[]).map((username: string): OnlineClient => ({
+            email: username,
+            ip: "unknown",
+            port: 0,
+            protocol: "unknown",
+            user: username,
+            source: "unknown",
+            reset: "",
+          }));
+        }
+        
+        // If it's already an array of objects, return as-is
+        return onlineData as OnlineClient[];
+      }
+
+      return [];
+    } catch (error) {
+      this.log("Error fetching online clients", error);
+      return [];
+    }
   }
 
   /**
@@ -713,15 +932,25 @@ export abstract class ThreeXUIClient {
    * Get server status
    */
   async getServerStatus(useCache = true): Promise<ServerStatus | null> {
-    const response = await this.makeAuthenticatedRequest(
-      "/panel/api/server/status",
-      GetServerStatusResponseSchema,
-      { method: "POST" },
-      useCache,
-      30 // Cache for 30 seconds only for server status
-    );
+    try {
+      const response = await this.makeAuthenticatedRequest(
+        "/panel/api/server/status",
+        GetServerStatusResponseSchema,
+        { method: "GET" },
+        useCache,
+        30 // Cache for 30 seconds only for server status
+      );
 
-    return response.obj || null;
+      if (!response.success) {
+        this.log("Server status request failed", response.msg);
+        return null;
+      }
+
+      return response.obj ?? null;
+    } catch (error) {
+      this.log("Error fetching server status", error);
+      return null;
+    }
   }
 
   /**
@@ -741,13 +970,28 @@ export abstract class ThreeXUIClient {
    * Get server logs
    */
   async getServerLogs(): Promise<string> {
-    const response = await this.makeAuthenticatedRequest(
-      "/panel/api/server/getLogs",
-      BaseResponseSchema,
-      { method: "POST" }
-    );
+    try {
+      const response = await this.makeAuthenticatedRequest(
+        "/panel/api/server/getLogs",
+        BaseResponseSchema,
+        { method: "GET" }
+      );
 
-    return response.obj as string || "";
+      if (!response.success) {
+        this.log("Server logs request failed", response.msg);
+        return `Error fetching logs: ${response.msg || "Unknown error"}`;
+      }
+
+      // Handle empty logs (no logs available)
+      if (response.obj === null || response.obj === undefined) {
+        return "No logs available";
+      }
+
+      return (response.obj as string) || "No logs available";
+    } catch (error) {
+      this.log("Error fetching server logs", error);
+      return `Error fetching logs: ${error instanceof Error ? error.message : "Unknown error"}`;
+    }
   }
 
   /**

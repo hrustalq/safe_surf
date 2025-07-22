@@ -19,6 +19,7 @@ export const LoginResponseSchema = BaseResponseSchema.extend({
       session: z.string().optional(),
       token: z.string().optional(),
     })
+    .nullable()
     .optional(),
 });
 
@@ -182,18 +183,20 @@ export const AllocateSchema = z.object({
   concurrency: z.number().int().min(1).default(3),
 });
 
-// Client schema - this is the parsed client object
+// Client schema - this is the parsed client object from 3X-UI API
 export const ClientSchema = z.object({
   id: z.string().uuid("Invalid client ID format"),
   flow: z.string().default(""),
-  email: z.string().email("Invalid email format").optional(),
+  email: z.string().optional(), // Allow usernames, not just emails
   limitIp: z.number().int().min(0).default(0),
   totalGB: z.number().int().min(0).default(0),
   expiryTime: z.number().int().min(0).default(0),
   enable: z.boolean().default(true),
-  tgId: z.string().default(""),
+  tgId: z.union([z.string(), z.number()]).optional(), // Can be string or number
   subId: z.string().default(""),
   reset: z.number().int().min(0).default(0),
+  comment: z.string().optional(), // Add missing field
+  security: z.string().optional(), // For VMESS clients
 });
 
 // Client options for different protocols
@@ -216,19 +219,19 @@ export const ClientOptionsSchema = z.discriminatedUnion("protocol", [
   }),
 ]);
 
-// Parsed inbound settings (after JSON parsing)
+// Parsed inbound settings (after JSON parsing) - flexible to handle real 3X-UI data
 export const ParsedInboundSettingsSchema = z.object({
   clients: z.array(ClientSchema).default([]),
   decryption: z.string().default("none"),
   fallbacks: z.array(z.record(z.unknown())).default([]),
-});
+}).passthrough(); // Allow additional unknown fields
 
 // Client statistics embedded in inbound
 export const ClientStatsEmbeddedSchema = z.object({
   id: z.number().int().positive(),
   inboundId: z.number().int().positive(),
   enable: z.boolean().default(true),
-  email: z.string().email().default(""),
+  email: z.string().default(""), // Allow usernames, not just emails
   up: z.number().int().min(0).default(0),
   down: z.number().int().min(0).default(0),
   expiryTime: z.number().int().min(0).default(0),
@@ -246,7 +249,7 @@ export const RawInboundSchema = z.object({
   enable: z.boolean().default(true),
   expiryTime: z.number().int().min(0).default(0),
   clientStats: z.array(ClientStatsEmbeddedSchema).default([]),
-  listen: z.string().ip().default(""),
+  listen: z.string().default(""), // Can be empty string or IP
   port: z.number().int().min(1).max(65535),
   protocol: z.enum(["vmess", "vless", "trojan", "shadowsocks", "dokodemo-door", "socks", "http"]),
   settings: z.string(),
@@ -266,7 +269,7 @@ export const InboundSchema = z.object({
   enable: z.boolean().default(true),
   expiryTime: z.number().int().min(0).default(0),
   clientStats: z.array(ClientStatsEmbeddedSchema).default([]),
-  listen: z.string().ip().default(""),
+  listen: z.string().default(""),
   port: z.number().int().min(1).max(65535),
   protocol: z.enum(["vmess", "vless", "trojan", "shadowsocks", "dokodemo-door", "socks", "http"]),
   settings: ParsedInboundSettingsSchema,
@@ -280,7 +283,7 @@ export const InboundSchema = z.object({
 export const InboundOptionsSchema = z.object({
   remark: z.string().min(1, "Remark is required"),
   enable: z.boolean().default(true),
-  listen: z.string().ip().default(""),
+  listen: z.string().default(""), // Can be empty string or IP
   port: z.number().int().min(1).max(65535),
   protocol: z.enum(["vmess", "vless", "trojan", "shadowsocks", "dokodemo-door", "socks", "http"]),
   expiryTime: z.number().int().min(0).default(0),
@@ -296,7 +299,7 @@ export const ClientStatsSchema = z.object({
   id: z.number().int().positive(),
   inboundId: z.number().int().positive(),
   enable: z.boolean(),
-  email: z.string().email(),
+  email: z.string(), // Allow usernames, not just emails
   up: z.number().int().min(0),
   down: z.number().int().min(0),
   expiryTime: z.number().int().min(0),
@@ -338,23 +341,27 @@ export const ServerStatusSchema = z.object({
   }),
 });
 
-// Online clients schema
+// Online clients schema - 3X-UI can return different formats
 export const OnlineClientSchema = z.object({
-  email: z.string().email(),
-  ip: z.string().ip(),
-  port: z.number().int().min(1).max(65535),
+  email: z.string(), // Allow usernames, not just emails
+  ip: z.string(), // Allow any string, not just IPs
+  port: z.number().int().min(0).max(65535), // Allow 0 for unknown ports
   protocol: z.string(),
   user: z.string(),
-  source: z.string().ip(),
+  source: z.string(), // Allow any string, not just IPs
   reset: z.string(),
 });
 
-export const OnlineClientsSchema = z.array(OnlineClientSchema);
+// Support both detailed objects and simple string arrays
+export const OnlineClientsSchema = z.union([
+  z.array(OnlineClientSchema), // Detailed format
+  z.array(z.string()), // Simple string array (just email/username)
+]);
 
 // Client IPs schema
 export const ClientIpsSchema = z.object({
-  email: z.string().email(),
-  ips: z.array(z.string().ip()),
+  email: z.string(), // Allow usernames, not just emails
+  ips: z.array(z.string()), // Allow any strings, not just IPs
 });
 
 // Database backup schema
@@ -366,11 +373,11 @@ export const BackupSchema = z.object({
 
 // API request/response schemas
 export const GetInboundsResponseSchema = BaseResponseSchema.extend({
-  obj: z.array(RawInboundSchema),
+  obj: z.array(RawInboundSchema).nullable(),
 });
 
 export const GetInboundResponseSchema = BaseResponseSchema.extend({
-  obj: RawInboundSchema,
+  obj: RawInboundSchema.nullable(),
 });
 
 export const AddInboundRequestSchema = InboundOptionsSchema;
@@ -397,19 +404,19 @@ export const UpdateClientRequestSchema = ClientSchema.partial().extend({
 export const UpdateClientResponseSchema = BaseResponseSchema;
 
 export const GetClientStatsResponseSchema = BaseResponseSchema.extend({
-  obj: ClientStatsSchema,
+  obj: ClientStatsSchema.nullable(),
 });
 
 export const GetServerStatusResponseSchema = BaseResponseSchema.extend({
-  obj: ServerStatusSchema,
+  obj: ServerStatusSchema.nullable(),
 });
 
 export const GetOnlineClientsResponseSchema = BaseResponseSchema.extend({
-  obj: OnlineClientsSchema,
+  obj: OnlineClientsSchema.nullable(),
 });
 
 export const GetClientIpsResponseSchema = BaseResponseSchema.extend({
-  obj: ClientIpsSchema,
+  obj: ClientIpsSchema.nullable(),
 });
 
 export const SendBackupResponseSchema = BaseResponseSchema;
@@ -417,10 +424,45 @@ export const SendBackupResponseSchema = BaseResponseSchema;
 // Helper function to parse raw inbound to typed inbound
 export function parseRawInbound(rawInbound: z.infer<typeof RawInboundSchema>): z.infer<typeof InboundSchema> {
   try {
-    const settings = ParsedInboundSettingsSchema.parse(JSON.parse(rawInbound.settings));
-    const streamSettings = StreamSettingsSchema.parse(JSON.parse(rawInbound.streamSettings));
-    const sniffing = SniffingSchema.parse(JSON.parse(rawInbound.sniffing));
-    const allocate = rawInbound.allocate ? AllocateSchema.parse(JSON.parse(rawInbound.allocate)) : undefined;
+    // Parse JSON strings to objects
+    let settings: z.infer<typeof ParsedInboundSettingsSchema>;
+    let streamSettings: z.infer<typeof StreamSettingsSchema>; 
+    let sniffing: z.infer<typeof SniffingSchema>;
+    let allocate: z.infer<typeof AllocateSchema> | undefined;
+
+    try {
+      const parsedSettings = JSON.parse(rawInbound.settings) as unknown;
+      settings = ParsedInboundSettingsSchema.parse(parsedSettings);
+    } catch (settingsError) {
+      console.warn("Failed to parse inbound settings, using defaults:", settingsError);
+      settings = { clients: [], decryption: "none", fallbacks: [] };
+    }
+
+    try {
+      const parsedStreamSettings = JSON.parse(rawInbound.streamSettings) as unknown;
+      streamSettings = StreamSettingsSchema.parse(parsedStreamSettings);
+    } catch (streamError) {
+      console.warn("Failed to parse stream settings, using defaults:", streamError);
+      streamSettings = { network: "tcp", security: "none", externalProxy: [] };
+    }
+
+    try {
+      const parsedSniffing = JSON.parse(rawInbound.sniffing) as unknown;
+      sniffing = SniffingSchema.parse(parsedSniffing);
+    } catch (sniffingError) {
+      console.warn("Failed to parse sniffing settings, using defaults:", sniffingError);
+      sniffing = { enabled: false, destOverride: [], metadataOnly: false, routeOnly: false };
+    }
+
+    try {
+      if (rawInbound.allocate?.trim()) {
+        const parsedAllocate = JSON.parse(rawInbound.allocate) as unknown;
+        allocate = AllocateSchema.parse(parsedAllocate);
+      }
+    } catch (allocateError) {
+      console.warn("Failed to parse allocate settings:", allocateError);
+      allocate = undefined;
+    }
 
     return {
       ...rawInbound,

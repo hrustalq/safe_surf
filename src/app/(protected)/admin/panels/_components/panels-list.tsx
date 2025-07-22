@@ -1,7 +1,9 @@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import Link from "next/link";
 import { Badge } from "~/components/ui/badge";
-import { CheckCircle, XCircle, Globe } from "lucide-react";
+import { Button } from "~/components/ui/button";
+import { CheckCircle, XCircle, Globe, ExternalLink } from "lucide-react";
 import { api } from "~/trpc/server";
 import { PanelActions } from "./panel-actions";
 
@@ -66,11 +68,19 @@ export async function PanelsList() {
             </p>
           </div>
 
-          <PanelActions 
-            panelId={panel.id}
-            panelName={panel.name}
-            isActive={panel.isActive}
-          />
+          <div className="flex items-center gap-2">
+            <Link href={`/admin/panels/${panel.id}`}>
+              <Button variant="outline" size="sm">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Подробно
+              </Button>
+            </Link>
+            <PanelActions 
+              panelId={panel.id}
+              panelName={panel.name}
+              isActive={panel.isActive}
+            />
+          </div>
         </div>
       ))}
     </div>
