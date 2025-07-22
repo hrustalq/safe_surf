@@ -8,6 +8,7 @@ import {
   Shield,
   Database,
   UserCheck,
+  Monitor,
 } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -32,6 +33,11 @@ const adminNavItems = [
     title: "Серверы",
     href: "/admin/servers",
     icon: Server,
+  },
+  {
+    title: "3X-UI Панель",
+    href: "/admin/panels",
+    icon: Monitor,
   },
   {
     title: "VPN Планы",

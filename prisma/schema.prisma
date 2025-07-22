@@ -124,19 +124,36 @@ model Subscription {
     @@index([status])
 }
 
+// Single 3X-UI Panel Configuration
+model XUIPanel {
+    id            String    @id @default(cuid())
+    name          String    // Panel display name
+    host          String    // Panel hostname/IP
+    port          Int       @default(54321) // Panel port
+    username      String    // Panel admin username
+    password      String    // Panel admin password
+    apiUrl        String    // Full Panel API URL
+    isActive      Boolean   @default(true)
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+}
+
+// Server Outbound Configurations
 model XUIServer {
     id            String    @id @default(cuid())
-    name          String    // Server display name
-    location      String    // Server location
-    locationRu    String    // Russian location name
-    host          String    // Server hostname/IP
-    port          Int       @default(54321) // 3x-ui panel port
-    username      String    // 3x-ui admin username
-    password      String    // 3x-ui admin password
-    apiUrl        String    // Full API URL
+    name          String    // Server display name (e.g., "US East 1")
+    location      String    // Server location (e.g., "New York, USA")
+    locationRu    String    // Russian location name (e.g., "Нью-Йорк, США")
+    host          String    // Actual server hostname/IP for outbound
+    port          Int       @default(443) // Server port for outbound connection
+    protocol      String    @default("vless") // Protocol: vless, vmess, trojan, etc.
+    outboundId    String?   // 3x-ui outbound identifier
+    outboundTag   String?   // 3x-ui outbound tag name
+    security      String    @default("tls") // Security: tls, reality, none
     isActive      Boolean   @default(true)
-    maxClients    Int       @default(100) // Maximum clients per server
+    maxClients    Int       @default(100) // Maximum clients per outbound
     currentLoad   Int       @default(0)   // Current number of active clients
+    priority      Int       @default(0)   // Priority for load balancing
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
 }

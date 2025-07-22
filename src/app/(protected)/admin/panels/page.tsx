@@ -1,46 +1,46 @@
 import { Suspense } from "react";
 import { Card } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
-import { ServersStats } from "./_components/servers-stats";
-import { ServersList } from "./_components/servers-list";
-import { AddServerForm } from "./_components/add-server-form";
+import { PanelsStats } from "./_components/panels-stats";
+import { PanelsList } from "./_components/panels-list";
+import { AddPanelForm } from "./_components/add-panel-form";
 import { HydrateClient } from "~/trpc/server";
 
-export default function AdminServersPage() {
+export default function AdminPanelsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Управление Outbound серверами</h1>
+        <h1 className="text-3xl font-bold mb-2">Управление 3X-UI панелями</h1>
         <p className="text-muted-foreground">
-          Управление outbound конфигурациями 3X-UI для маршрутизации VPN трафика
+          Настройка и управление панелями 3X-UI для централизованного контроля outbound серверов
         </p>
       </div>
 
-      {/* Servers Stats */}
-      <Suspense fallback={<ServersStatsSkeleton />}>
-        <ServersStats />
+      {/* Panels Stats */}
+      <Suspense fallback={<PanelsStatsSkeleton />}>
+        <PanelsStats />
       </Suspense>
 
-      {/* Servers List */}
+      {/* Panels List */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">Outbound Серверы</h3>
+          <h3 className="text-lg font-semibold">3X-UI Панели</h3>
           <HydrateClient>
-            <AddServerForm />
+            <AddPanelForm />
           </HydrateClient>
         </div>
-        <Suspense fallback={<ServersListSkeleton />}>
-          <ServersList />
+        <Suspense fallback={<PanelsListSkeleton />}>
+          <PanelsList />
         </Suspense>
       </Card>
     </div>
   );
 }
 
-function ServersStatsSkeleton() {
+function PanelsStatsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-      {[1, 2, 3, 4].map((i) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {[1, 2, 3].map((i) => (
         <Card key={i} className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -55,10 +55,10 @@ function ServersStatsSkeleton() {
   );
 }
 
-function ServersListSkeleton() {
+function PanelsListSkeleton() {
   return (
     <div className="space-y-4">
-      {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
           <Skeleton className="h-5 w-5 rounded-full" />
           <div className="flex-1">
