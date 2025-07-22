@@ -58,7 +58,7 @@ export async function GET(
             const decodedRemark = decodeURIComponent(remark);
             const cleanUrl = baseUrl + encodeURIComponent(decodedRemark);
             return cleanUrl;
-          } catch (e) {
+          } catch {
             // If decoding fails, return original URL
             return url;
           }
