@@ -35,7 +35,7 @@ function getDigitalOceanClient() {
   if (!doClient) {
     try {
       doClient = createDigitalOceanClient();
-    } catch (error) {
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Digital Ocean client not configured. Please check your environment variables.",
@@ -49,7 +49,7 @@ function getProvisioningService() {
   if (!provisioningService) {
     try {
       provisioningService = createServerProvisioningService();
-    } catch (error) {
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Server provisioning service not configured. Please check your environment variables.",

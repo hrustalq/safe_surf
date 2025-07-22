@@ -71,11 +71,34 @@ export function TrafficSyncButton({ panelId, showStats = false }: TrafficSyncBut
     syncAllTrafficMutation.mutate();
   };
 
-  if (showStats && trafficStats) {
-    return (
-      <div className="space-y-4">
-        {/* Traffic Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  if (showStats) {
+    if (statsLoading) {
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 bg-muted rounded animate-pulse mb-2" />
+                  <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (trafficStats) {
+      return (
+        <div className="space-y-4">
+          {/* Traffic Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -160,6 +183,7 @@ export function TrafficSyncButton({ panelId, showStats = false }: TrafficSyncBut
         </div>
       </div>
     );
+    }
   }
 
   return (

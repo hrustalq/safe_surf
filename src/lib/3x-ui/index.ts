@@ -7,6 +7,7 @@ export * from "./panel-client";
 
 // Export utility functions
 export * from "./utils";
+export * from "./user-mapping";
 
 // Re-export key types for convenience
 export type {
@@ -39,6 +40,10 @@ export type {
   ShadowsocksSettings,
   ClientWithInbound,
 } from "./schemas";
+
+export type {
+  UserClientMapping,
+} from "./user-mapping";
 
 // Import for the factory function
 import { ThreeXUIPanelClient } from "./panel-client";

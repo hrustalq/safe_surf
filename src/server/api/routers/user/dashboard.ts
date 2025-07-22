@@ -1,5 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { dashboardDataDto, type DashboardDataDto } from "./dto/dashboard.dto";
+import { getUserClientStats, syncUserTrafficFromXUI, isUserOnline } from "~/lib/3x-ui/user-mapping";
 
 export const dashboardRouter = createTRPCRouter({
   // Get dashboard data for authenticated user
@@ -49,7 +50,6 @@ export const dashboardRouter = createTRPCRouter({
           where: {
             userId,
             status: "ACTIVE",
-            isActive: true,
             endDate: {
               gte: new Date(),
             },
@@ -75,26 +75,61 @@ export const dashboardRouter = createTRPCRouter({
 
       // Calculate stats
       const activeSubscriptions = subscriptions.filter(
-        (sub) => sub.status === "ACTIVE" && sub.isActive && sub.endDate > new Date()
+        (sub) => sub.status === "ACTIVE" && sub.endDate > new Date()
       ).length;
 
       const totalSubscriptions = subscriptions.length;
 
-      // Calculate data usage (mock data for now - in real implementation would come from VPN server)
+      // Get real data usage from 3x-ui
+      let usedBandwidth = BigInt(0);
+      let usagePercentage = 0;
       const currentPlan = currentSubscription?.plan;
-      const maxBandwidth = currentPlan?.maxBandwidth;
-      const usedBandwidth = BigInt(Math.floor(Math.random() * Number(maxBandwidth ?? BigInt(0))));
-      const usagePercentage = maxBandwidth 
-        ? Math.floor((Number(usedBandwidth) / Number(maxBandwidth)) * 100)
-        : 0;
+      const maxBandwidth = currentSubscription?.trafficLimit ?? currentPlan?.maxBandwidth;
+
+      if (currentSubscription) {
+        try {
+          // Try to get fresh stats from 3x-ui
+          const userStats = await getUserClientStats(userId);
+          if (userStats) {
+            usedBandwidth = BigInt(userStats.totalTraffic);
+            
+            // Update database with fresh stats (async, don't wait)
+            syncUserTrafficFromXUI(userId).catch(error => 
+              console.warn("Failed to sync traffic data:", error)
+            );
+          } else {
+            // Fallback to database stored values
+            usedBandwidth = currentSubscription.trafficUsed;
+          }
+        } catch (error) {
+          console.warn("Failed to get real-time stats, using database values:", error);
+          usedBandwidth = currentSubscription.trafficUsed;
+        }
+
+        // Calculate usage percentage
+        usagePercentage = maxBandwidth 
+          ? Math.min(100, Math.floor((Number(usedBandwidth) / Number(maxBandwidth)) * 100))
+          : 0;
+      }
 
       // Calculate days until expiry
       const daysUntilExpiry = currentSubscription 
         ? Math.ceil((currentSubscription.endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
         : null;
 
-      // Mock connection status (would be real-time from VPN server)
-      const connectionStatus = currentSubscription?.isActive ? "connected" : "disconnected";
+      // Get real connection status from 3x-ui
+      let connectionStatus: "connected" | "disconnected" | "connecting" = "disconnected";
+      
+      if (currentSubscription?.status === "ACTIVE") {
+        try {
+          const onlineStatus = await isUserOnline(userId);
+          connectionStatus = onlineStatus.isOnline ? "connected" : "disconnected";
+        } catch (error) {
+          console.warn("Failed to check user online status:", error);
+          // Fallback to assume connected if subscription is active
+          connectionStatus = "disconnected";
+        }
+      }
 
       // Generate recent activities (mock data)
       const recentActivities = [
@@ -145,7 +180,7 @@ export const dashboardRouter = createTRPCRouter({
           status: currentSubscription.status,
           startDate: currentSubscription.startDate,
           endDate: currentSubscription.endDate,
-          isActive: currentSubscription.isActive,
+          isActive: currentSubscription.status === "ACTIVE",
           connectionInfo: currentSubscription.connectionInfo,
           maxDevices: currentSubscription.plan.maxDevices,
           protocols: JSON.parse(currentSubscription.plan.protocols) as string[],
@@ -154,5 +189,67 @@ export const dashboardRouter = createTRPCRouter({
       };
 
       return dashboardData;
+    }),
+
+  // Sync user traffic from 3x-ui
+  syncTraffic: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const userId = ctx.session.user.id;
+
+      if (!userId) {
+        throw new Error("User ID not found in session");
+      }
+
+      try {
+        const success = await syncUserTrafficFromXUI(userId);
+        
+        if (success) {
+          return {
+            success: true,
+            message: "Traffic data synchronized successfully",
+          };
+        } else {
+          return {
+            success: false,
+            message: "Failed to sync traffic data - no active subscription or 3x-ui client found",
+          };
+        }
+      } catch (error) {
+        console.error("Error syncing user traffic:", error);
+        throw new Error(
+          error instanceof Error 
+            ? error.message 
+            : "Failed to sync traffic data"
+        );
+      }
+    }),
+
+  // Check real-time connection status
+  getConnectionStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.session.user.id;
+
+      if (!userId) {
+        throw new Error("User ID not found in session");
+      }
+
+      try {
+        const onlineStatus = await isUserOnline(userId);
+        
+        return {
+          isOnline: onlineStatus.isOnline,
+          onlineClients: onlineStatus.onlineClients.length,
+          totalClients: onlineStatus.totalClients,
+          connectionStatus: onlineStatus.isOnline ? "connected" : "disconnected" as const,
+        };
+      } catch (error) {
+        console.error("Error checking connection status:", error);
+        return {
+          isOnline: false,
+          onlineClients: 0,
+          totalClients: 0,
+          connectionStatus: "disconnected" as const,
+        };
+      }
     }),
 }); 

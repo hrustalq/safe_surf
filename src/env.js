@@ -11,41 +11,48 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
-    AUTH_GOOGLE_ID: z.string(),
-    AUTH_GOOGLE_SECRET: z.string(),
+    AUTH_GOOGLE_ID: z.string().optional(),
+    AUTH_GOOGLE_SECRET: z.string().optional(),
+    NEXTAUTH_URL: z.string().url().optional(), // Your production domain URL (e.g., https://safe-surf.tech)
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    RESEND_API_KEY: z.string(),
-    RESEND_FROM_EMAIL: z.string().email(),
-    YOOKASSA_SHOP_ID: z.string(),
-    YOOKASSA_SECRET_KEY: z.string(),
 
-    // Digital Ocean Integration
+    // Email Service (Optional - needed for password reset)
+    RESEND_API_KEY: z.string().optional(),
+    RESEND_FROM_EMAIL: z.string().email().optional(),
+    
+    // Payment Service (Optional - needed for subscriptions)
+    YOOKASSA_SHOP_ID: z.string().optional(),
+    YOOKASSA_SECRET_KEY: z.string().optional(),
+
+    // Digital Ocean Integration (Optional - needed for server provisioning)
     DIGITAL_OCEAN_API_TOKEN: z.string().optional(),
 
-    // 3x-UI Panel Configuration
+    // 3x-UI Panel Configuration (Optional - can be configured via database instead)
+    // Either use environment variables OR configure panels via admin interface
     THREEXUI_BASE_URL: z.string().url().optional(),
     THREEXUI_USERNAME: z.string().optional(),
     THREEXUI_PASSWORD: z.string().optional(),
     THREEXUI_SECRET_KEY: z.string().optional(), // For request signing
+    THREEXUI_SERVER_ADDRESS: z.string().optional(), // Server address for VPN configs
 
-    // VPS SSH Configuration
+    // VPS SSH Configuration (Optional - needed for server provisioning)
     VPS_SSH_PRIVATE_KEY: z.string().optional(),
     VPS_SSH_PUBLIC_KEY: z.string().optional(),
     VPS_SSH_FINGERPRINT: z.string().optional(),
 
-    // Security & Encryption
+    // Security & Encryption (Optional - for enhanced security features)
     ENCRYPTION_KEY: z.string().length(64).optional(), // 32 bytes in hex
     JWT_SECRET: z.string().optional(),
 
-    // External Services
-    REDIS_URL: z.string().url().optional(), // For caching/queues
-    UPSTASH_REDIS_REST_URL: z.string().url().optional(), // For rate limiting
+    // External Services (Optional - for caching and rate limiting)
+    REDIS_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
-    // Monitoring (Optional)
+    // Monitoring (Optional - for production monitoring)
     SENTRY_DSN: z.string().url().optional(),
     DATADOG_API_KEY: z.string().optional(),
   },
@@ -57,6 +64,7 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   },
 
   /**
@@ -67,13 +75,14 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL ?? "http://localhost:3000",
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
     YOOKASSA_SHOP_ID: process.env.YOOKASSA_SHOP_ID,
     YOOKASSA_SECRET_KEY: process.env.YOOKASSA_SECRET_KEY,
-
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     // Digital Ocean
     DIGITAL_OCEAN_API_TOKEN: process.env.DIGITAL_OCEAN_API_TOKEN,
 
@@ -82,6 +91,7 @@ export const env = createEnv({
     THREEXUI_USERNAME: process.env.THREEXUI_USERNAME,
     THREEXUI_PASSWORD: process.env.THREEXUI_PASSWORD,
     THREEXUI_SECRET_KEY: process.env.THREEXUI_SECRET_KEY,
+    THREEXUI_SERVER_ADDRESS: process.env.THREEXUI_SERVER_ADDRESS,
 
     // SSH
     VPS_SSH_PRIVATE_KEY: process.env.VPS_SSH_PRIVATE_KEY,

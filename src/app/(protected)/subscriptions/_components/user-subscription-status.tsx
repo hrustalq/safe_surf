@@ -33,28 +33,32 @@ export async function UserSubscriptionStatus() {
   const daysLeft = Math.ceil(
     (new Date(subscription.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
   );
+  const isTrial = subscription.plan.name === "Trial";
 
   return (
-    <Card className="p-6 mb-8 bg-gradient-to-r from-green-50 to-primary/5 dark:from-green-950/50 dark:to-primary/5">
+    <Card className={`p-6 mb-8 ${isTrial 
+      ? "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50 border-blue-200 dark:border-blue-800" 
+      : "bg-gradient-to-r from-green-50 to-primary/5 dark:from-green-950/50 dark:to-primary/5"
+    }`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-full">
-            <CheckCircle className="h-5 w-5 text-primary" />
+          <div className={`p-2 rounded-full ${isTrial ? "bg-blue-100 dark:bg-blue-900" : "bg-primary/10"}`}>
+            <CheckCircle className={`h-5 w-5 ${isTrial ? "text-blue-600 dark:text-blue-400" : "text-primary"}`} />
           </div>
           <div>
             <h3 className="text-lg font-semibold">
-              Активная подписка: {subscription.plan.nameRu}
+              {isTrial ? "🎉 Пробная подписка:" : "Активная подписка:"} {subscription.plan.nameRu}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {subscription.plan.descriptionRu}
+              {isTrial ? "Бесплатная пробная версия на 7 дней" : subscription.plan.descriptionRu}
             </p>
           </div>
         </div>
         <Badge 
-          variant={isExpired ? "destructive" : "default"}
+          variant={isExpired ? "destructive" : isTrial ? "secondary" : "default"}
           className="ml-2"
         >
-          {isExpired ? "Истекла" : "Активна"}
+          {isExpired ? "Истекла" : isTrial ? "Пробная" : "Активна"}
         </Badge>
       </div>
 
@@ -106,7 +110,34 @@ export async function UserSubscriptionStatus() {
         )}
       </div>
 
-      {isExpired && (
+      {isTrial && !isExpired && daysLeft <= 3 && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/50 dark:to-yellow-950/50 rounded-lg border border-orange-200 dark:border-orange-800">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="h-4 w-4 text-orange-600" />
+            <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+              Пробная версия скоро закончится!
+            </p>
+          </div>
+          <p className="text-sm text-orange-700 dark:text-orange-300 mb-3">
+            У вас осталось всего {daysLeft} дней пробного периода. 
+            Выберите подходящий план ниже, чтобы не потерять доступ к VPN.
+          </p>
+        </div>
+      )}
+
+      {isTrial && isExpired && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/50 dark:to-orange-950/50 rounded-lg border border-red-200 dark:border-red-800">
+          <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
+            🚨 Пробная версия истекла
+          </p>
+          <p className="text-sm text-red-700 dark:text-red-300">
+            Ваша 7-дневная пробная версия закончилась. 
+            Выберите один из платных планов ниже, чтобы продолжить пользоваться SafeSurf VPN.
+          </p>
+        </div>
+      )}
+
+      {!isTrial && isExpired && (
         <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950/50 rounded-lg border border-yellow-200 dark:border-yellow-800">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
             Ваша подписка истекла. Продлите её, чтобы продолжить пользоваться VPN.

@@ -14,6 +14,10 @@ export async function sendPasswordResetEmail({
   resetUrl,
   userName,
 }: SendPasswordResetEmailParams) {
+  if (!env.RESEND_FROM_EMAIL) {
+    throw new Error("RESEND_FROM_EMAIL environment variable is not set");
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,

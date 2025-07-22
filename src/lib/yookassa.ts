@@ -34,6 +34,9 @@ class YooKassaService {
   private readonly baseUrl = "https://api.yookassa.ru/v3";
 
   constructor() {
+    if (!env.YOOKASSA_SHOP_ID || !env.YOOKASSA_SECRET_KEY) {
+      throw new Error("YOOKASSA_SHOP_ID and YOOKASSA_SECRET_KEY environment variables are required");
+    }
     this.shopId = env.YOOKASSA_SHOP_ID;
     this.secretKey = env.YOOKASSA_SECRET_KEY;
   }

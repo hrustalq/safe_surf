@@ -1,6 +1,7 @@
 "use client";
 
-import { Activity, Globe } from "lucide-react";
+import { useState } from "react";
+import { Globe, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Button } from "~/components/ui/button";
@@ -35,7 +36,28 @@ function ConnectionCardSkeleton() {
 }
 
 export function ConnectionStatus() {
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  
   const { data: dashboardData, isLoading } = api.user.dashboard.getData.useQuery();
+  
+  // Get real-time connection status with shorter cache time
+  const { 
+    data: connectionData, 
+    isLoading: isLoadingConnection,
+    refetch: refetchConnection 
+  } = api.user.dashboard.getConnectionStatus.useQuery(undefined, {
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 15000, // Consider data stale after 15 seconds
+  });
+
+  const handleRefreshStatus = async () => {
+    setIsCheckingStatus(true);
+    try {
+      await refetchConnection();
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
 
   if (isLoading) {
     return <ConnectionCardSkeleton />;
@@ -45,7 +67,12 @@ export function ConnectionStatus() {
     return null;
   }
 
-  const { currentSubscription, stats } = dashboardData;
+  const { currentSubscription } = dashboardData;
+  
+  // Use real connection data if available, fallback to dashboard stats
+  const isRealTimeConnected = connectionData?.isOnline ?? false;
+  const onlineClientsCount = connectionData?.onlineClients ?? 0;
+  const totalClientsCount = connectionData?.totalClients ?? 0;
 
   if (!currentSubscription) {
     return (
@@ -74,30 +101,40 @@ export function ConnectionStatus() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Activity className={`h-6 w-6 ${
-              stats.connectionStatus === "connected" ? "text-green-600" : 
-              stats.connectionStatus === "connecting" ? "text-yellow-600 animate-pulse" : "text-red-600"
-            }`} />
-            {stats.connectionStatus === "connected" && (
+            {isRealTimeConnected ? (
+              <Wifi className="h-6 w-6 text-green-600" />
+            ) : (
+              <WifiOff className="h-6 w-6 text-red-600" />
+            )}
+            {isRealTimeConnected && (
               <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full animate-pulse" />
             )}
           </div>
           <div>
             <h3 className="font-semibold">
-              {stats.connectionStatus === "connected" ? "VPN подключен" : 
-               stats.connectionStatus === "connecting" ? "Подключение..." : "VPN отключен"}
+              {isRealTimeConnected ? "VPN подключен" : "VPN отключен"}
             </h3>
             <p className="text-sm text-muted-foreground">
               {currentSubscription.planNameRu}
+              {totalClientsCount > 0 && (
+                <span className="ml-2">
+                  ({onlineClientsCount}/{totalClientsCount} устройств)
+                </span>
+              )}
             </p>
           </div>
         </div>
-        <Button 
-          variant={stats.connectionStatus === "connected" ? "destructive" : "default"}
-          size="sm"
-        >
-          {stats.connectionStatus === "connected" ? "Отключить" : "Подключить"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefreshStatus}
+            disabled={isCheckingStatus || isLoadingConnection}
+            title="Обновить статус подключения"
+          >
+            <RefreshCw className={`h-4 w-4 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
       
       <Separator className="my-4" />
@@ -108,15 +145,15 @@ export function ConnectionStatus() {
           <span className="font-medium">{currentSubscription.maxDevices}</span>
         </div>
         
-        {stats.dataUsage.limit && (
+        {dashboardData.stats.dataUsage.limit && (
           <>
             <div className="flex justify-between text-sm">
               <span>Использование данных</span>
               <span className="font-medium">
-                {formatBytes(stats.dataUsage.used)} / {formatBytes(stats.dataUsage.limit)}
+                {formatBytes(dashboardData.stats.dataUsage.used)} / {formatBytes(dashboardData.stats.dataUsage.limit)}
               </span>
             </div>
-            <Progress value={stats.dataUsage.percentage} className="h-2" />
+            <Progress value={dashboardData.stats.dataUsage.percentage} className="h-2" />
           </>
         )}
         

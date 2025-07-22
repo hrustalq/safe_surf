@@ -88,14 +88,40 @@ export const authConfig = {
     strategy: "jwt",
   },
   callbacks: {
-    signIn: async ({ user, account }) => {
-      // For OAuth providers, we need to fetch the role from database
+    signIn: async ({ user, account, profile: _profile, email: _email, credentials: _credentials }) => {
+      // For OAuth providers (like Google), create trial subscription for new users
       if (account?.provider === "google" && user.email) {
-        const dbUser = await db.user.findUnique({
+        const existingUser = await db.user.findUnique({
           where: { email: user.email },
         });
-        if (dbUser) {
-          user.role = dbUser.role;
+        
+        if (existingUser) {
+          user.role = existingUser.role;
+        } else {
+          // This is a new Google user, we'll create trial subscription in a separate process
+          // to avoid blocking the sign-in process
+          try {
+            const { createTrialSubscription } = await import("~/lib/subscription-utils");
+            
+            // Schedule trial creation after sign-in completes
+            // This ensures the user record exists before creating the subscription
+            process.nextTick(() => {
+              db.user.findUnique({
+                where: { email: user.email! },
+              }).then((newUser) => {
+                if (newUser) {
+                  console.log(`Creating trial subscription for new Google user ${newUser.id}`);
+                  return createTrialSubscription(newUser.id);
+                }
+              }).then(() => {
+                console.log(`Trial subscription created for Google user ${user.email}`);
+              }).catch((error) => {
+                console.error("Error creating trial for Google user:", error);
+              });
+            });
+          } catch (error) {
+            console.error("Error setting up trial for new Google user:", error);
+          }
         }
       }
       return true;

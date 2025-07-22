@@ -2,6 +2,7 @@ import { type Metadata } from "next";
 import { DashboardStats } from "./_components/dashboard-stats";
 import { ConnectionStatus } from "./_components/connection-status";
 import { RecentActivity } from "./_components/recent-activity";
+import { SubscriptionUrl } from "./_components/subscription-url";
 
 export const metadata: Metadata = {
   title: "Панель управления - SafeSurf VPN",
@@ -24,6 +25,9 @@ export default function DashboardPage() {
 
       {/* Connection Status */}
       <ConnectionStatus />
+
+      {/* VPN Configuration */}
+      <SubscriptionUrl />
 
       {/* Recent Activity */}
       <RecentActivity />

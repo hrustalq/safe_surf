@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hashSync } from "bcrypt-ts";
 import { z } from "zod";
 import { db } from "~/server/db";
+import { createTrialSubscription } from "~/lib/subscription-utils";
 
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -47,6 +48,16 @@ export async function POST(request: Request) {
       },
     });
 
+    // Create trial subscription
+    let trialSubscription = null;
+    try {
+      const trialResult = await createTrialSubscription(user.id);
+      trialSubscription = trialResult;
+    } catch (trialError) {
+      console.error("Failed to create trial subscription:", trialError);
+      // Don't fail signup if trial creation fails, but log it
+    }
+
     return NextResponse.json({
       message: "User created successfully",
       user: {
@@ -54,6 +65,7 @@ export async function POST(request: Request) {
         name: user.name,
         email: user.email,
       },
+      hasTrialSubscription: !!trialSubscription,
     });
   } catch (error) {
     console.error("Signup error:", error);

@@ -7,8 +7,11 @@ import { SubscribeButton } from "./subscribe-button";
 
 export async function SubscriptionPlans() {
   const plans = await api.subscription.plans.getAll();
+  
+  // Filter out Trial plan from public subscription plans
+  const availablePlans = plans?.filter(plan => plan.name !== "Trial") ?? [];
 
-  if (!plans?.length) {
+  if (!availablePlans.length) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">Планы временно недоступны</p>
@@ -18,7 +21,7 @@ export async function SubscriptionPlans() {
 
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {plans.map((plan) => {
+      {availablePlans.map((plan) => {
         const isPopular = plan.name === "Premium";
         
         return (

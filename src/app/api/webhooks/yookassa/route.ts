@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/server/db";
+import { handleSubscriptionCreation } from "~/lib/subscription-management";
 
 interface YooKassaEvent {
   type: string;
@@ -92,14 +93,19 @@ async function handlePaymentSucceeded(payment: YooKassaPayment | undefined) {
 
     console.log("Subscription activated:", subscription.id);
 
-    // Here you would also:
-    // 1. Create VPN configuration for the user
-    // 2. Send welcome email
-    // 3. Set up user in 3x-ui panel
-    // 4. Generate connection configs
+    // Add user to all 3x-ui inbounds and generate configs
+    try {
+      console.log(`Setting up VPN access for subscription ${subscription.id}`);
+      await handleSubscriptionCreation(subscription.id);
+      console.log(`Successfully set up VPN access for subscription ${subscription.id}`);
+    } catch (setupError) {
+      console.error(`Error setting up VPN access for subscription ${subscription.id}:`, setupError);
+      
+      // Log the error but don't fail the webhook - the subscription is still activated
+      // We can retry the setup later or handle it manually
+      console.warn(`Subscription ${subscription.id} is active but VPN setup failed. Manual intervention may be required.`);
+    }
     
-    // TODO: Integrate with 3x-ui API to create user account
-    // TODO: Generate and store connection configs
     // TODO: Send welcome email with setup instructions
 
   } catch (error) {

@@ -11,6 +11,34 @@ async function main() {
   // Create VPN plans
   const plans = [
     {
+      name: "Trial",
+      nameRu: "Пробный",
+      description: "7-day free trial to test our service",
+      descriptionRu: "7-дневная бесплатная пробная версия",
+      features: JSON.stringify([
+        "2 simultaneous connections",
+        "5GB monthly traffic",
+        "Servers in 5 countries",
+        "VLESS & VMESS support",
+        "Basic support",
+      ]),
+      featuresRu: JSON.stringify([
+        "2 одновременных подключения",
+        "5ГБ месячного трафика",
+        "Серверы в 5 странах",
+        "VLESS & VMESS поддержка",
+        "Базовая поддержка",
+      ]),
+      price: 0.00,
+      currency: "USD",
+      durationDays: 7,
+      maxDevices: 2,
+      maxBandwidth: 5368709120, // 5GB in bytes
+      protocols: JSON.stringify(["VLESS", "VMESS"]),
+      isActive: true,
+      sortOrder: 0,
+    },
+    {
       name: "Basic",
       nameRu: "Базовый",
       description: "Perfect for personal use",

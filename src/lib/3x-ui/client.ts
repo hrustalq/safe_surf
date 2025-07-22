@@ -719,25 +719,61 @@ export abstract class ThreeXUIClient {
    * Add client to inbound
    */
   async addClient(inboundId: number, client: Client): Promise<boolean> {
-    const validatedClient = ClientSchema.parse(client);
+    try {
+      const validatedClient = ClientSchema.parse(client);
+      
+      this.log(`Adding client ${validatedClient.email} to inbound ${inboundId}`, {
+        inboundId,
+        clientId: validatedClient.id,
+        email: validatedClient.email
+      });
 
-    const response = await this.makeAuthenticatedRequest(
-      `/panel/api/inbounds/addClient`,
-      AddClientResponseSchema,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          id: inboundId,
-          settings: JSON.stringify({ clients: [validatedClient] }),
-        }),
+      const requestBody = {
+        id: inboundId,
+        settings: JSON.stringify({ clients: [validatedClient] }),
+      };
+
+      this.log("AddClient request body:", requestBody);
+
+      const response = await this.makeAuthenticatedRequest(
+        `/panel/api/inbounds/addClient`,
+        AddClientResponseSchema,
+        {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      this.log(`AddClient response:`, {
+        success: response.success,
+        message: response.msg,
+        inboundId,
+        email: validatedClient.email
+      });
+
+      if (!response.success) {
+        this.log(`Failed to add client: ${response.msg}`, {
+          inboundId,
+          email: validatedClient.email,
+          error: response.msg
+        });
+        return false;
       }
-    );
 
-    // Clear related cache
-    this.clearCache(`inbound:${inboundId}`);
-    this.clearCache("clients");
-    
-    return response.success;
+      // Clear related cache
+      this.clearCache(`inbound:${inboundId}`);
+      this.clearCache("clients");
+      
+      return true;
+    } catch (error) {
+      this.log(`Error in addClient:`, {
+        inboundId,
+        email: client.email,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      throw error;
+    }
   }
 
   /**
@@ -856,7 +892,7 @@ export abstract class ThreeXUIClient {
       const response = await this.makeAuthenticatedRequest(
         "/panel/api/inbounds/onlines",
         GetOnlineClientsResponseSchema,
-        { method: "GET" },
+        { method: "POST" },
         useCache,
         60 // Cache for 1 minute only for online status
       );

@@ -111,6 +111,7 @@ model VpnPlan {
 
 model Subscription {
     id              String           @id @default(cuid())
+    uuid            String?          @unique @default(cuid()) // Public UUID for subscription URL
     userId          String
     planId          String
     status          SubscriptionStatus
@@ -120,7 +121,13 @@ model Subscription {
     paymentId       String?          // External payment system reference
     xUIInboundId    String?          // 3x-ui inbound identifier
     xUIClientEmail  String?          // 3x-ui client email/username
+    xUIClientId     String?          // 3x-ui client UUID
     connectionInfo  String?          // JSON with connection details (configs, keys, etc.)
+    
+    // Config URLs for different protocols
+    configUrls      String?          // JSON array of config URLs (vmess://, vless://, etc.)
+    qrCodes         String?          // JSON object with QR codes for each config (base64 images)
+    serverInfo      String?          // JSON with server details (host, port, protocols, etc.)
     
     // Current traffic usage (updated from 3x-ui)
     trafficUsed     BigInt           @default(0) // Total bytes used (up + down)
@@ -139,6 +146,7 @@ model Subscription {
     @@index([userId])
     @@index([status])
     @@index([xUIClientEmail])
+    @@index([xUIClientId])
 }
 
 // Single 3X-UI Panel Configuration

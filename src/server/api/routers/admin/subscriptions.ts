@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, adminProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { handleSubscriptionUpdate } from "~/lib/subscription-management";
 
 export const subscriptionsRouter = createTRPCRouter({
   getAll: adminProcedure
@@ -97,13 +98,29 @@ export const subscriptionsRouter = createTRPCRouter({
         });
       }
 
-      return await ctx.db.subscription.update({
+      const updatedSubscription = await ctx.db.subscription.update({
         where: { id: input.subscriptionId },
         data: { 
           status: input.status,
           isActive: input.status === "ACTIVE",
         },
       });
+
+      // Handle 3x-ui integration for status changes
+      try {
+        if (input.status === "ACTIVE") {
+          // If subscription is being activated, add user to inbounds (or update existing)
+          await handleSubscriptionUpdate(input.subscriptionId);
+          console.log(`Successfully updated 3x-ui for subscription ${input.subscriptionId} (status: ${input.status})`);
+        }
+        // Note: We don't automatically remove users from 3x-ui when status changes to EXPIRED/CANCELLED
+        // This allows for grace periods and manual cleanup if needed
+      } catch (xuiError) {
+        console.error(`Error updating 3x-ui for subscription ${input.subscriptionId}:`, xuiError);
+        // Don't fail the admin operation - log the error for manual resolution
+      }
+
+      return updatedSubscription;
     }),
 
   extend: adminProcedure
@@ -126,7 +143,7 @@ export const subscriptionsRouter = createTRPCRouter({
       const newEndDate = new Date(subscription.endDate);
       newEndDate.setDate(newEndDate.getDate() + input.days);
 
-      return await ctx.db.subscription.update({
+      const extendedSubscription = await ctx.db.subscription.update({
         where: { id: input.subscriptionId },
         data: { 
           endDate: newEndDate,
@@ -134,5 +151,16 @@ export const subscriptionsRouter = createTRPCRouter({
           isActive: true,
         },
       });
+
+      // Handle 3x-ui integration for subscription extension
+      try {
+        await handleSubscriptionUpdate(input.subscriptionId);
+        console.log(`Successfully updated 3x-ui limits for extended subscription ${input.subscriptionId}`);
+      } catch (xuiError) {
+        console.error(`Error updating 3x-ui for extended subscription ${input.subscriptionId}:`, xuiError);
+        // Don't fail the admin operation - log the error for manual resolution
+      }
+
+      return extendedSubscription;
     }),
 }); 

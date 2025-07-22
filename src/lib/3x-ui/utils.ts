@@ -265,9 +265,55 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
+// Types for stream settings data
+interface StreamSettingsData {
+  network: string;
+  security: string;
+  realitySettings?: {
+    settings?: {
+      publicKey?: string;
+      fingerprint?: string;
+      serverName?: string;
+      spiderX?: string;
+    };
+    serverNames?: string[];
+    shortIds?: string[];
+    dest?: string;
+  };
+  tlsSettings?: {
+    serverName?: string;
+    fingerprint?: string;
+    alpn?: string[];
+    allowInsecure?: boolean;
+  };
+  wsSettings?: {
+    path?: string;
+    host?: string;
+    headers?: Record<string, string>;
+  };
+  tcpSettings?: {
+    header?: {
+      type?: string;
+    };
+  };
+  grpcSettings?: {
+    serviceName?: string;
+    multiMode?: boolean;
+  };
+  httpSettings?: {
+    host?: string[];
+    path?: string;
+  };
+}
+
 // Types for client configuration
 interface ClientConfig {
   id: string;
+  flow?: string;
+  encryption?: string;
+  streamSettings?: StreamSettingsData;
+  
+  // Legacy support
   network?: string;
   security?: string;
   alterId?: number;
@@ -289,41 +335,17 @@ export function generateClientUrl(
   
   switch (protocol.toLowerCase()) {
     case "vmess": {
-      const vmessConfig = {
-        v: "2",
-        ps: remark ?? "",
-        add: server,
-        port: port.toString(),
-        id: config.id,
-        aid: config.alterId?.toString() ?? "0",
-        scy: config.security ?? "auto",
-        net: config.network ?? "tcp",
-        type: "none",
-        host: "",
-        path: "",
-        tls: config.security === "tls" ? "tls" : "",
-      };
-      
-      const encoded = Buffer.from(JSON.stringify(vmessConfig)).toString('base64');
-      return `vmess://${encoded}`;
+      return generateVmessUrl(config, server, port, remark);
     }
     
     case "vless": {
-      const params = new URLSearchParams({
-        encryption: "none",
-        security: config.security ?? "none",
-        type: config.network ?? "tcp",
-      });
-      
-      if (remark) params.set("name", remark);
-      
-      return `vless://${config.id}@${server}:${port}?${params.toString()}`;
+      return generateVlessUrl(config, server, port, remark);
     }
     
     case "trojan": {
       const params = new URLSearchParams({
-        security: config.security ?? "tls",
-        type: config.network ?? "tcp",
+        security: config.streamSettings?.security ?? config.security ?? "tls",
+        type: config.streamSettings?.network ?? config.network ?? "tcp",
       });
       
       if (remark) params.set("name", remark);
@@ -340,6 +362,150 @@ export function generateClientUrl(
     default:
       throw new Error(`Unsupported protocol: ${protocol}`);
   }
+}
+
+/**
+ * Generate VMESS configuration URL
+ */
+function generateVmessUrl(
+  config: ClientConfig,
+  server: string,
+  port: number,
+  remark?: string
+): string {
+  const streamSettings = config.streamSettings;
+  const network = streamSettings?.network ?? config.network ?? "tcp";
+  const security = streamSettings?.security ?? config.security ?? "none";
+  
+  const vmessConfig: Record<string, string | number> = {
+    v: "2",
+    ps: remark ?? "",
+    add: server,
+    port: port.toString(),
+    id: config.id,
+    aid: config.alterId?.toString() ?? "0",
+    scy: "auto",
+    net: network,
+    type: "none",
+    host: "",
+    path: "",
+    tls: security === "tls" ? "tls" : "",
+    sni: "",
+    fp: "",
+    alpn: "",
+  };
+
+  // Handle different network types
+  if (network === "ws" && streamSettings?.wsSettings) {
+    vmessConfig.path = streamSettings.wsSettings.path ?? "/";
+    vmessConfig.host = streamSettings.wsSettings.host ?? "";
+  } else if (network === "grpc" && streamSettings?.grpcSettings) {
+    vmessConfig.path = streamSettings.grpcSettings.serviceName ?? "";
+    vmessConfig.type = streamSettings.grpcSettings.multiMode ? "multi" : "gun";
+  } else if (network === "http" && streamSettings?.httpSettings) {
+    vmessConfig.path = streamSettings.httpSettings.path ?? "/";
+    if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
+      vmessConfig.host = streamSettings.httpSettings.host[0] ?? "";
+    }
+  }
+
+  // Handle TLS settings
+  if (security === "tls" && streamSettings?.tlsSettings) {
+    vmessConfig.sni = streamSettings.tlsSettings.serverName ?? "";
+    vmessConfig.fp = streamSettings.tlsSettings.fingerprint ?? "chrome";
+    if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
+      vmessConfig.alpn = streamSettings.tlsSettings.alpn.join(",");
+    }
+  }
+
+  const encoded = Buffer.from(JSON.stringify(vmessConfig)).toString('base64');
+  return `vmess://${encoded}`;
+}
+
+/**
+ * Generate VLESS configuration URL
+ */
+function generateVlessUrl(
+  config: ClientConfig,
+  server: string,
+  port: number,
+  remark?: string
+): string {
+  const streamSettings = config.streamSettings;
+  const network = streamSettings?.network ?? config.network ?? "tcp";
+  const security = streamSettings?.security ?? config.security ?? "none";
+  
+  const params = new URLSearchParams();
+  
+  // Basic parameters
+  params.set("encryption", config.encryption ?? "none");
+  params.set("type", network);
+  params.set("security", security);
+  
+  // Add flow for XTLS
+  if (config.flow) {
+    params.set("flow", config.flow);
+  }
+
+  // Handle different network types
+  if (network === "ws" && streamSettings?.wsSettings) {
+    params.set("path", streamSettings.wsSettings.path ?? "/");
+    if (streamSettings.wsSettings.host) {
+      params.set("host", streamSettings.wsSettings.host);
+    }
+  } else if (network === "grpc" && streamSettings?.grpcSettings) {
+    params.set("serviceName", streamSettings.grpcSettings.serviceName ?? "");
+    params.set("mode", streamSettings.grpcSettings.multiMode ? "multi" : "gun");
+  } else if (network === "http" && streamSettings?.httpSettings) {
+    params.set("path", streamSettings.httpSettings.path ?? "/");
+    if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
+      params.set("host", streamSettings.httpSettings.host.join(","));
+    }
+  }
+
+  // Handle TLS settings
+  if (security === "tls" && streamSettings?.tlsSettings) {
+    params.set("sni", streamSettings.tlsSettings.serverName ?? "");
+    params.set("fp", streamSettings.tlsSettings.fingerprint ?? "chrome");
+    if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
+      params.set("alpn", streamSettings.tlsSettings.alpn.join("%2C"));
+    }
+  }
+
+  // Handle Reality settings
+  if (security === "reality" && streamSettings?.realitySettings) {
+    const realitySettings = streamSettings.realitySettings;
+    const settings = realitySettings.settings;
+    
+    if (settings?.publicKey) {
+      params.set("pbk", settings.publicKey);
+    }
+    if (settings?.fingerprint) {
+      params.set("fp", settings.fingerprint);
+    }
+    if (settings?.serverName) {
+      params.set("sni", settings.serverName);
+    }
+    if (settings?.spiderX) {
+      // Don't double-encode spiderX - it should be URL encoded once, not twice
+      params.set("spx", settings.spiderX);
+    }
+    
+    // Use the first shortId if available
+    if (realitySettings.shortIds && realitySettings.shortIds.length > 0) {
+      const shortId = realitySettings.shortIds[0];
+      if (shortId) {
+        params.set("sid", shortId);
+      }
+    }
+  }
+
+  // Add remark as fragment
+  if (remark) {
+    return `vless://${config.id}@${server}:${port}?${params.toString()}#${encodeURIComponent(remark)}`;
+  }
+  
+  return `vless://${config.id}@${server}:${port}?${params.toString()}`;
 }
 
 // Types for parsed URL result

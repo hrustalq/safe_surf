@@ -21,6 +21,7 @@ const signupResponseSchema = z.object({
     name: z.string(),
     email: z.string(),
   }),
+  hasTrialSubscription: z.boolean().optional(),
 });
 
 const errorResponseSchema = z.object({
@@ -110,7 +111,12 @@ export default function SignUpPage() {
       });
 
       if (signInResult?.ok) {
-        router.push("/dashboard");
+        // Navigate to onboarding if trial subscription was created, otherwise dashboard
+        if (result.data.hasTrialSubscription) {
+          router.push("/onboarding");
+        } else {
+          router.push("/dashboard");
+        }
         router.refresh();
       }
     } catch {
@@ -128,7 +134,15 @@ export default function SignUpPage() {
     
     setIsGoogleLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/dashboard" });
+      const result = await signIn("google", { 
+        callbackUrl: "/onboarding",
+        redirect: false 
+      });
+      
+      if (result?.ok) {
+        // For new Google users, always redirect to onboarding first
+        router.push("/onboarding");
+      }
     } catch {
       setError("Не удалось зарегистрироваться через Google");
       setIsGoogleLoading(false);
