@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Settings, Shield, User, LogOut } from "lucide-react";
+import { Home, Settings, Shield, User, LogOut, UserCog } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 
@@ -19,31 +19,45 @@ import {
 import { Button } from "~/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
-const menuItems = [
-  {
-    title: "Главная",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Мои подключения",
-    url: "/dashboard/subscriptions",
-    icon: Shield,
-  },
-  {
-    title: "Профиль",
-    url: "/dashboard/profile",
-    icon: User,
-  },
-  {
-    title: "Настройки",
-    url: "/dashboard/settings",
-    icon: Settings,
-  },
-];
-
 export function AppSidebar() {
   const { data: session } = useSession();
+
+  const baseMenuItems = [
+    {
+      title: "Главная",
+      url: "/dashboard",
+      icon: Home,
+    },
+    {
+      title: "Подписки",
+      url: "/subscriptions",
+      icon: Shield,
+    },
+    {
+      title: "Профиль",
+      url: "/dashboard/profile",
+      icon: User,
+    },
+    {
+      title: "Настройки",
+      url: "/dashboard/settings",
+      icon: Settings,
+    },
+  ];
+
+  const adminMenuItems = [
+    {
+      title: "Админ панель",
+      url: "/admin",
+      icon: UserCog,
+    },
+  ];
+
+  // Add admin items if user is admin or super admin
+  const menuItems = [
+    ...baseMenuItems,
+    ...(session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN" ? adminMenuItems : [])
+  ];
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });

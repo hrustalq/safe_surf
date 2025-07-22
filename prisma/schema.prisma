@@ -50,6 +50,7 @@ model User {
     emailVerified DateTime?
     image         String?
     password      String?
+    role          UserRole  @default(USER)
     accounts      Account[]
     sessions      Session[]
     subscriptions Subscription[]
@@ -138,6 +139,12 @@ model XUIServer {
     currentLoad   Int       @default(0)   // Current number of active clients
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
+}
+
+enum UserRole {
+    USER
+    ADMIN
+    SUPER_ADMIN
 }
 
 enum SubscriptionStatus {

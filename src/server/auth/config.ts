@@ -1,10 +1,11 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { compareSync } from "bcrypt-ts";
 import { z } from "zod";
 import { env } from "~/env";
+import { type UserRole } from "@prisma/client";
 
 import { db } from "~/server/db";
 
@@ -18,15 +19,13 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
-      // ...other properties
-      // role: UserRole;
-    } & DefaultSession["user"];
+      role: UserRole;
+    } & DefaultSession["user"]; 
   }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+  interface User {
+    role: UserRole;
+  }
 }
 
 /**
@@ -75,6 +74,7 @@ export const authConfig = {
             name: user.name,
             email: user.email,
             image: user.image,
+            role: user.role,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -88,9 +88,22 @@ export const authConfig = {
     strategy: "jwt",
   },
   callbacks: {
+    signIn: async ({ user, account }) => {
+      // For OAuth providers, we need to fetch the role from database
+      if (account?.provider === "google" && user.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: user.email },
+        });
+        if (dbUser) {
+          user.role = dbUser.role;
+        }
+      }
+      return true;
+    },
     jwt: ({ token, user }) => {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
       }
       return token;
     },
@@ -99,6 +112,7 @@ export const authConfig = {
       user: {
         ...session.user,
         id: token.id as string,
+        role: token.role as UserRole,
       },
     }),
   },
