@@ -65,8 +65,8 @@ export function Footer() {
                 <span className="font-bold text-xl text-foreground">SafeSurf</span>
               </Link>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                Премиальный VPN сервис с современными протоколами для полной анонимности 
-                и безопасности в интернете. Защитите свои данные уже сегодня.
+                Надёжный VPN сервис с высокоскоростным сервером и современными протоколами 
+                для безопасного интернета. Защитите свои данные уже сегодня.
               </p>
               
               {/* Social Media */}

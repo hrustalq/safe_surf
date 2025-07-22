@@ -8,15 +8,15 @@ import { Footer } from "~/app/_components/landing/footer";
 import { LoadingSection } from "~/components/ui/loading-spinner";
 
 export const metadata: Metadata = {
-  title: "SafeSurf VPN - Защищённый интернет с современными протоколами",
-  description: "Премиальный VPN сервис с поддержкой современных протоколов VLESS и VMESS на базе V2Ray. Полная анонимность, высокие скорости, безлимитный трафик.",
+  title: "SafeSurf VPN - Надёжный VPN с высокой скоростью",
+  description: "Надёжный VPN сервис с высокоскоростным сервером и поддержкой современных протоколов VLESS и VMESS. Быстрый и стабильный интернет, безлимитный трафик.",
   keywords: "VPN, VLESS, VMESS, V2Ray, защита, анонимность, безопасность, интернет, Россия",
   authors: [{ name: "SafeSurf Team" }],
   creator: "SafeSurf",
   publisher: "SafeSurf",
   openGraph: {
-    title: "SafeSurf VPN - Защищённый интернет с современными протоколами",
-    description: "Премиальный VPN сервис с поддержкой современных протоколов VLESS и VMESS на базе V2Ray",
+    title: "SafeSurf VPN - Надёжный VPN с высокой скоростью",
+    description: "Надёжный VPN сервис с высокоскоростным сервером и современными протоколами VLESS и VMESS",
     url: "https://safesurf.tech",
     siteName: "SafeSurf VPN",
     locale: "ru_RU",
@@ -32,8 +32,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SafeSurf VPN - Защищённый интернет",
-    description: "Премиальный VPN сервис с современными протоколами",
+    title: "SafeSurf VPN - Надёжный VPN с высокой скоростью",
+    description: "Надёжный VPN сервис с высокоскоростным сервером",
     images: ["/twitter-image.jpg"],
   },
   robots: {

@@ -18,10 +18,10 @@ const scrollToSection = (sectionId: string) => {
 };
 
 const stats = [
-  { label: "Серверов по всему миру", value: "50+" },
-  { label: "Стран подключения", value: "25+" },
+  { label: "Высокоскоростной сервер", value: "1" },
   { label: "Времени безотказной работы", value: "99.9%" },
   { label: "Современных протоколов", value: "3" },
+  { label: "Скорость подключения", value: "До 1 Гбит/с" },
 ];
 
 const protocols = [
@@ -61,8 +61,8 @@ export function HeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                Премиальный VPN сервис с поддержкой современных протоколов VLESS и VMESS на базе V2Ray. 
-                Обходите любые блокировки, защищайте свои данные и наслаждайтесь полной анонимностью в интернете.
+                Надёжный VPN сервис с высокоскоростным сервером и современными протоколами VLESS и VMESS. 
+                Обходите блокировки, защищайте свои данные и наслаждайтесь быстрым и стабильным интернетом.
               </motion.p>
               
               <motion.div
@@ -150,8 +150,8 @@ export function HeroSection() {
                       <Globe className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-foreground text-base">50+ стран</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Серверы по миру</p>
+                      <h3 className="font-bold text-foreground text-base">Один надёжный сервер</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Оптимальная настройка</p>
                     </div>
                   </motion.div>
                 </Card>
