@@ -43,6 +43,27 @@ check_root() {
     fi
 }
 
+# Check required files exist
+check_files() {
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    log_info "Checking required files..."
+    
+    if [[ ! -d "$script_dir/app" ]]; then
+        log_error "Application directory 'app' not found in $script_dir"
+    fi
+    
+    if [[ ! -f "$script_dir/requirements.txt" ]]; then
+        log_error "Requirements file 'requirements.txt' not found in $script_dir"
+    fi
+    
+    if [[ ! -f "$script_dir/database/schema.sql" ]]; then
+        log_error "Database schema file 'database/schema.sql' not found in $script_dir"
+    fi
+    
+    log_info "All required files found"
+}
+
 # Detect OS
 detect_os() {
     if [[ -f /etc/os-release ]]; then
@@ -136,7 +157,8 @@ EOF
     chmod 600 "$CONFIG_DIR/database.env"
     
     # Initialize database with schema
-    PGPASSWORD=$DB_PASS psql -h localhost -U v2ray_vpn -d v2ray_vpn -f database/schema.sql
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PGPASSWORD=$DB_PASS psql -h localhost -U v2ray_vpn -d v2ray_vpn -f "$SCRIPT_DIR/database/schema.sql"
     
     log_info "PostgreSQL database configured successfully"
 }
@@ -145,13 +167,17 @@ EOF
 setup_python_env() {
     log_step "Setting up Python environment..."
     
+    # Get script directory
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
     # Create directories
     mkdir -p "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
     
-    # Copy application files
-    cp -r "$PWD/app" "$INSTALL_DIR/"
-    cp requirements.txt "$INSTALL_DIR/"
+    # Copy application files from script directory
+    cp -r "$SCRIPT_DIR/app" "$INSTALL_DIR/"
+    cp "$SCRIPT_DIR/requirements.txt" "$INSTALL_DIR/"
+    
+    cd "$INSTALL_DIR"
     
     # Create virtual environment
     python3 -m venv venv
@@ -569,6 +595,7 @@ main() {
     echo "========================================"
     
     check_root
+    check_files
     detect_os
     install_dependencies
     install_v2ray
