@@ -1,17 +1,27 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { Shield, Zap, Globe, Lock } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 
+// Smooth scroll function for anchor links
+const scrollToSection = (sectionId: string) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+};
+
 const stats = [
   { label: "Серверов по всему миру", value: "50+" },
-  { label: "Довольных клиентов", value: "10,000+" },
-  { label: "Странии подключения", value: "25+" },
+  { label: "Стран подключения", value: "25+" },
   { label: "Времени безотказной работы", value: "99.9%" },
+  { label: "Современных протоколов", value: "3" },
 ];
 
 const protocols = [
@@ -24,11 +34,11 @@ export function HeroSection() {
   return (
     <section id="home" className="relative overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 pt-24 pb-16">
       {/* Background elements */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 -z-20 pointer-events-none">
         <div className="absolute inset-y-0 right-1/2 -z-10 mr-16 w-[200%] origin-bottom-left skew-x-[-30deg] bg-background shadow-xl shadow-primary/10 ring-1 ring-primary/5 sm:mr-28 lg:mr-0 xl:mr-16 xl:origin-center" />
       </div>
       
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-none">
           <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2 lg:items-center">
             <div>
@@ -61,11 +71,20 @@ export function HeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
               >
-                <Button size="lg" className="px-8 py-3" asChild>
-                  <Link href="#pricing">Начать сейчас</Link>
+                <Button 
+                  size="lg" 
+                  className="px-8 py-3 text-base font-semibold" 
+                  onClick={() => scrollToSection('pricing')}
+                >
+                  Начать сейчас
                 </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link href="#features">Узнать больше</Link>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="px-8 py-3 text-base font-semibold" 
+                  onClick={() => scrollToSection('features')}
+                >
+                  Узнать больше
                 </Button>
               </motion.div>
               
@@ -107,62 +126,62 @@ export function HeroSection() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                <Card className="p-6 bg-card/50 backdrop-blur">
+                <Card className="p-6 bg-card/60 backdrop-blur border border-border hover:border-primary/30 transition-all duration-300">
                   <motion.div
-                    className="flex items-center gap-3 mb-4"
+                    className="flex items-center gap-4"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <Zap className="h-6 w-6 text-primary" />
+                    <div className="rounded-xl bg-primary/10 p-3">
+                      <Zap className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Высокая скорость</h3>
-                      <p className="text-sm text-muted-foreground">До 1 Гбит/с</p>
+                      <h3 className="font-bold text-foreground text-base">Высокая скорость</h3>
+                      <p className="text-sm text-muted-foreground mt-1">До 1 Гбит/с</p>
                     </div>
                   </motion.div>
                 </Card>
                 
-                <Card className="p-6 bg-card/50 backdrop-blur">
+                <Card className="p-6 bg-card/60 backdrop-blur border border-border hover:border-primary/30 transition-all duration-300">
                   <motion.div
-                    className="flex items-center gap-3 mb-4"
+                    className="flex items-center gap-4"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <Globe className="h-6 w-6 text-primary" />
+                    <div className="rounded-xl bg-primary/10 p-3">
+                      <Globe className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">50+ стран</h3>
-                      <p className="text-sm text-muted-foreground">Серверы по миру</p>
+                      <h3 className="font-bold text-foreground text-base">50+ стран</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Серверы по миру</p>
                     </div>
                   </motion.div>
                 </Card>
                 
-                <Card className="p-6 bg-card/50 backdrop-blur">
+                <Card className="p-6 bg-card/60 backdrop-blur border border-border hover:border-primary/30 transition-all duration-300">
                   <motion.div
-                    className="flex items-center gap-3 mb-4"
+                    className="flex items-center gap-4"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <Lock className="h-6 w-6 text-primary" />
+                    <div className="rounded-xl bg-primary/10 p-3">
+                      <Lock className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Шифрование</h3>
-                      <p className="text-sm text-muted-foreground">AES-256 защита</p>
+                      <h3 className="font-bold text-foreground text-base">Шифрование</h3>
+                      <p className="text-sm text-muted-foreground mt-1">AES-256 защита</p>
                     </div>
                   </motion.div>
                 </Card>
                 
-                <Card className="p-6 bg-card/50 backdrop-blur">
+                <Card className="p-6 bg-card/60 backdrop-blur border border-border hover:border-primary/30 transition-all duration-300">
                   <motion.div
-                    className="flex items-center gap-3 mb-4"
+                    className="flex items-center gap-4"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <Shield className="h-6 w-6 text-primary" />
+                    <div className="rounded-xl bg-primary/10 p-3">
+                      <Shield className="h-7 w-7 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">Анонимность</h3>
-                      <p className="text-sm text-muted-foreground">Полная конфиденциальность</p>
+                      <h3 className="font-bold text-foreground text-base">Анонимность</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Полная конфиденциальность</p>
                     </div>
                   </motion.div>
                 </Card>

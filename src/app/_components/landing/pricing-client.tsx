@@ -50,7 +50,7 @@ export function PricingSectionClient({ plans }: PricingSectionClientProps) {
         </motion.div>
 
         {/* Pricing Cards */}
-        <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="mt-20 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -76,86 +76,90 @@ export function PricingSectionClient({ plans }: PricingSectionClientProps) {
               )}
               
               <Card 
-                className={`p-8 h-full ${
+                className={`p-8 h-full flex flex-col ${
                   plan.isPopular 
                     ? 'border-2 border-primary bg-gradient-to-br from-primary/5 to-primary/10' 
-                    : 'bg-card'
-                } hover:shadow-xl transition-all duration-300`}
+                    : 'bg-card border border-border'
+                } hover:shadow-xl hover:border-primary/30 transition-all duration-300`}
               >
-                {/* Plan Header */}
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-foreground mb-2">
-                    {plan.nameRu}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {plan.descriptionRu}
-                  </p>
-                  
-                  {/* Price */}
-                  <div className="mb-4">
-                    <motion.div
-                      className="text-4xl font-bold text-foreground"
-                      whileHover={{ scale: 1.05 }}
-                    >
-                      ${plan.price}
-                      <span className="text-lg text-muted-foreground font-normal">
-                        /месяц
-                      </span>
-                    </motion.div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {plan.maxDevices} {plan.maxDevices === 1 ? 'устройство' : 
-                       plan.maxDevices <= 4 ? 'устройства' : 'устройств'}
+                <div className="flex-grow">
+                  {/* Plan Header */}
+                  <div className="text-center mb-8">
+                    <h3 className="text-3xl font-bold text-foreground mb-3">
+                      {plan.nameRu}
+                    </h3>
+                    <p className="text-muted-foreground text-base mb-6 leading-relaxed">
+                      {plan.descriptionRu}
                     </p>
+                    
+                    {/* Price */}
+                    <div className="mb-6">
+                      <motion.div
+                        className="text-5xl font-bold text-foreground mb-2"
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        ${plan.price}
+                        <span className="text-xl text-muted-foreground font-normal ml-1">
+                          /месяц
+                        </span>
+                      </motion.div>
+                      <p className="text-base text-muted-foreground">
+                        {plan.maxDevices} {plan.maxDevices === 1 ? 'устройство' : 
+                         plan.maxDevices <= 4 ? 'устройства' : 'устройств'}
+                      </p>
+                    </div>
+                    
+                    {/* Protocols */}
+                    <div className="flex flex-wrap justify-center gap-2 mb-8">
+                      {plan.protocols.map((protocol) => (
+                        <Badge key={protocol} variant="secondary" className="text-sm font-medium px-3 py-1">
+                          {protocol}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                  
-                  {/* Protocols */}
-                  <div className="flex flex-wrap justify-center gap-2 mb-6">
-                    {plan.protocols.map((protocol) => (
-                      <Badge key={protocol} variant="secondary" className="text-xs">
-                        {protocol}
-                      </Badge>
+
+                  {/* Features */}
+                  <div className="space-y-4 mb-8">
+                    {plan.featuresRu.map((feature, idx) => (
+                      <motion.div
+                        key={idx}
+                        className="flex items-start gap-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4, delay: index * 0.2 + idx * 0.1 }}
+                        viewport={{ once: true }}
+                      >
+                        <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <span className="text-base text-foreground leading-relaxed">{feature}</span>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
 
-                {/* Features */}
-                <div className="space-y-3 mb-8">
-                  {plan.featuresRu.map((feature, idx) => (
-                    <motion.div
-                      key={idx}
-                      className="flex items-center gap-3"
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.2 + idx * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      <span className="text-sm text-foreground">{feature}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* CTA Button */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    className={`w-full ${
-                      plan.isPopular 
-                        ? 'bg-primary hover:bg-primary/90' 
-                        : ''
-                    }`}
-                    variant={plan.isPopular ? 'default' : 'outline'}
-                    size="lg"
-                    asChild
+                {/* CTA Button - Always at bottom */}
+                <div className="mt-auto pt-6 border-t border-border">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <Link href={`/auth/signup?plan=${plan.id}`}>
-                      {plan.isPopular && <Zap className="h-4 w-4 mr-2" />}
-                      Выбрать план
-                    </Link>
-                  </Button>
-                </motion.div>
+                    <Button
+                      className={`w-full h-12 text-base font-semibold ${
+                        plan.isPopular 
+                          ? 'bg-primary hover:bg-primary/90 shadow-lg' 
+                          : ''
+                      }`}
+                      variant={plan.isPopular ? 'default' : 'outline'}
+                      size="lg"
+                      asChild
+                    >
+                      <Link href={`/auth/signup?plan=${plan.id}`}>
+                        {plan.isPopular && <Zap className="h-5 w-5 mr-2" />}
+                        Выбрать план
+                      </Link>
+                    </Button>
+                  </motion.div>
+                </div>
               </Card>
             </motion.div>
           ))}
@@ -163,7 +167,7 @@ export function PricingSectionClient({ plans }: PricingSectionClientProps) {
 
         {/* Additional Info */}
         <motion.div
-          className="mt-16 text-center"
+          className="mt-24 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -171,38 +175,38 @@ export function PricingSectionClient({ plans }: PricingSectionClientProps) {
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-6 w-6 text-primary" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="h-8 w-8 text-primary" />
               </div>
-              <h4 className="font-semibold text-foreground mb-2">30-дневная гарантия</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="font-bold text-foreground mb-3 text-lg">30-дневная гарантия</h4>
+              <p className="text-base text-muted-foreground leading-relaxed">
                 Полный возврат средств в течение 30 дней
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-6 w-6 text-primary" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Zap className="h-8 w-8 text-primary" />
               </div>
-              <h4 className="font-semibold text-foreground mb-2">Мгновенная активация</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="font-bold text-foreground mb-3 text-lg">Мгновенная активация</h4>
+              <p className="text-base text-muted-foreground leading-relaxed">
                 Подключение к VPN через 2 минуты после оплаты
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="h-6 w-6 text-primary" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Star className="h-8 w-8 text-primary" />
               </div>
-              <h4 className="font-semibold text-foreground mb-2">Без логов</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="font-bold text-foreground mb-3 text-lg">Без логов</h4>
+              <p className="text-base text-muted-foreground leading-relaxed">
                 Мы не ведём логи вашей активности
               </p>
             </div>
           </div>
 
-          <div className="mt-12 p-6 bg-primary/10 rounded-lg">
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-16 p-8 bg-primary/10 rounded-xl">
+            <p className="text-base text-muted-foreground leading-relaxed">
               Все планы включают: неограниченный трафик, Kill Switch, DNS защиту, 
               поддержку всех устройств и 24/7 техническую поддержку
             </p>

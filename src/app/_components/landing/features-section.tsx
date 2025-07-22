@@ -117,7 +117,7 @@ export function FeaturesSection() {
         </motion.div>
 
         {/* Main Features */}
-        <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="mt-20 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {mainFeatures.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -126,29 +126,34 @@ export function FeaturesSection() {
               transition={{ duration: 0.6, delay: index * 0.2 }}
               viewport={{ once: true }}
             >
-              <Card className="p-6 h-full bg-card hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
-                <motion.div
-                  className="flex items-center gap-3 mb-4"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <feature.icon className="h-6 w-6 text-primary" />
+              <Card className="p-8 h-full bg-card hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/30 flex flex-col">
+                <div className="flex-grow">
+                  <motion.div
+                    className="flex items-start gap-4 mb-6"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <div className="rounded-xl bg-primary/10 p-4 shrink-0">
+                      <feature.icon className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-foreground mb-3">
+                        {feature.title}
+                      </h3>
+                      <p className="text-muted-foreground text-base leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-border">
+                  <div className="flex flex-wrap gap-2">
+                    {feature.highlights.map((highlight, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-sm font-medium px-3 py-1">
+                        {highlight}
+                      </Badge>
+                    ))}
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground">
-                    {feature.title}
-                  </h3>
-                </motion.div>
-                
-                <p className="text-muted-foreground mb-4">
-                  {feature.description}
-                </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  {feature.highlights.map((highlight, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {highlight}
-                    </Badge>
-                  ))}
                 </div>
               </Card>
             </motion.div>
@@ -156,18 +161,18 @@ export function FeaturesSection() {
         </div>
 
         {/* Protocol Section */}
-        <div className="mt-24">
+        <div className="mt-32">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-2xl font-bold text-foreground mb-4">
+            <h3 className="text-3xl font-bold text-foreground mb-6">
               Современные протоколы
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Используем самые передовые технологии для максимальной безопасности
             </p>
           </motion.div>
@@ -181,27 +186,31 @@ export function FeaturesSection() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <Card className="p-6 text-center bg-gradient-to-br from-card to-card/50 hover:shadow-xl transition-all duration-300">
-                  <motion.div
-                    className="text-4xl mb-4"
-                    whileHover={{ rotate: [0, -10, 10, 0] }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    {protocol.icon}
-                  </motion.div>
-                  <h4 className="text-xl font-bold text-foreground mb-2">
-                    {protocol.name}
-                  </h4>
-                  <p className="text-muted-foreground mb-4 text-sm">
-                    {protocol.description}
-                  </p>
-                  <div className="space-y-2">
-                    {protocol.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-primary" />
-                        <span className="text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
+                <Card className="p-8 text-center bg-gradient-to-br from-card to-card/50 hover:shadow-xl transition-all duration-300 border border-border hover:border-primary/30 h-full flex flex-col">
+                  <div className="flex-grow">
+                    <motion.div
+                      className="text-5xl mb-6"
+                      whileHover={{ rotate: [0, -10, 10, 0] }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      {protocol.icon}
+                    </motion.div>
+                    <h4 className="text-2xl font-bold text-foreground mb-4">
+                      {protocol.name}
+                    </h4>
+                    <p className="text-muted-foreground mb-6 text-base leading-relaxed">
+                      {protocol.description}
+                    </p>
+                  </div>
+                  <div className="mt-auto pt-4 border-t border-border">
+                    <div className="space-y-3">
+                      {protocol.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-3 text-sm justify-center">
+                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                          <span className="text-muted-foreground">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </Card>
               </motion.div>
@@ -210,23 +219,23 @@ export function FeaturesSection() {
         </div>
 
         {/* Additional Features Grid */}
-        <div className="mt-24">
+        <div className="mt-32">
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-2xl font-bold text-foreground mb-4">
+            <h3 className="text-3xl font-bold text-foreground mb-6">
               Дополнительные возможности
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Всё что нужно для безопасного и комфортного интернета
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {additionalFeatures.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -236,16 +245,16 @@ export function FeaturesSection() {
                 viewport={{ once: true }}
                 whileHover={{ y: -5 }}
               >
-                <Card className="p-6 bg-card/50 backdrop-blur hover:shadow-md transition-all duration-300">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-primary/10 p-2">
-                      <feature.icon className="h-5 w-5 text-primary" />
+                <Card className="p-6 bg-card/60 backdrop-blur hover:shadow-lg transition-all duration-300 border border-border hover:border-primary/20 h-full">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-lg bg-primary/10 p-3 shrink-0">
+                      <feature.icon className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-foreground text-sm">
+                      <h4 className="font-bold text-foreground text-base mb-2">
                         {feature.title}
                       </h4>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
                         {feature.description}
                       </p>
                     </div>
@@ -266,8 +275,8 @@ export function FeaturesSection() {
         >
           <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-6 py-3">
             <Star className="h-5 w-5 text-primary fill-primary" />
-            <span className="font-semibold text-foreground">4.9/5.0</span>
-            <span className="text-muted-foreground">• 10,000+ довольных клиентов</span>
+            <span className="font-semibold text-foreground">Высокие рейтинги</span>
+            <span className="text-muted-foreground">• Проверенное качество</span>
           </div>
         </motion.div>
       </div>

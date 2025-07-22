@@ -5,17 +5,17 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "О нас - SafeSurf VPN",
-  description: "Узнайте больше о SafeSurf VPN - команде, которая защищает вашу приватность и свободу в интернете с помощью современных технологий.",
-  keywords: "о компании, команда, миссия, SafeSurf VPN, приватность, безопасность",
+  title: "О разработчике - SafeSurf VPN",
+  description: "Узнайте больше о SafeSurf VPN - проекте разработчика Эльдара Гасанова, который защищает вашу приватность и свободу в интернете.",
+  keywords: "о разработчике, Эльдар Гасанов, миссия, SafeSurf VPN, приватность, безопасность",
 };
 
 export default function AboutPage() {
   const stats = [
-    { value: "1M+", label: "Активных пользователей" },
     { value: "50+", label: "Серверов по миру" },
     { value: "99.9%", label: "Время работы" },
     { value: "24/7", label: "Поддержка" },
+    { value: "2024", label: "Год основания" },
   ];
 
   const values = [
@@ -36,33 +36,16 @@ export default function AboutPage() {
     },
     {
       icon: Users,
-      title: "Сообщество в приоритете",
-      description: "Прислушиваемся к пользователям и постоянно улучшаем сервис на основе обратной связи.",
+      title: "Пользователи в приоритете",
+      description: "Прислушиваюсь к пользователям и постоянно улучшаю сервис на основе обратной связи.",
     },
   ];
 
-  const team = [
-    {
-      name: "Александр Петров",
-      role: "CEO & Основатель",
-      bio: "Эксперт в области кибербезопасности с 15-летним опытом",
-    },
-    {
-      name: "Мария Иванова",
-      role: "CTO",
-      bio: "Ведущий разработчик протоколов шифрования",
-    },
-    {
-      name: "Дмитрий Сидоров",
-      role: "Head of Security",
-      bio: "Специалист по сетевой безопасности и защите данных",
-    },
-    {
-      name: "Елена Козлова",
-      role: "Head of Support",
-      bio: "Обеспечивает лучший опыт поддержки для наших пользователей",
-    },
-  ];
+  const developerInfo = {
+    name: "Эльдар Гасанов",
+    role: "Основатель & Разработчик",
+    bio: "Fullstack разработчик с опытом в создании высоконагруженных систем и сетевой безопасности",
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -89,11 +72,11 @@ export default function AboutPage() {
           {/* Hero Section */}
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Защищаем вашу свободу в интернете
+              Защищаю вашу свободу в интернете
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              SafeSurf VPN создан командой экспертов в области кибербезопасности, 
-              которые верят в право каждого на приватность и свободный доступ к информации.
+              Привет! Я Эльдар Гасанов, разработчик SafeSurf VPN. Создаю этот сервис, 
+              потому что верю в право каждого на приватность и свободный доступ к информации.
             </p>
           </div>
 
@@ -109,20 +92,20 @@ export default function AboutPage() {
 
           {/* Mission */}
           <Card className="p-8 mb-16">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Наша миссия</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Моя миссия</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Мы создали SafeSurf VPN с одной целью — обеспечить каждому пользователю интернета 
+              Создаю SafeSurf VPN с одной целью — обеспечить каждому пользователю интернета 
               возможность безопасно и свободно пользоваться сетью без страха слежки, цензуры или утечки данных.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              В эпоху цифровых технологий приватность становится роскошью. Мы делаем её доступной каждому, 
+              В эпоху цифровых технологий приватность становится роскошью. Делаю её доступной каждому, 
               используя передовые технологии шифрования и современные протоколы передачи данных.
             </p>
           </Card>
 
           {/* Values */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold text-center text-foreground mb-8">Наши ценности</h2>
+            <h2 className="text-3xl font-bold text-center text-foreground mb-8">Мои принципы</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {values.map((value, index) => (
                 <Card key={index} className="p-6">
@@ -140,34 +123,32 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* Team */}
+          {/* Developer */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold text-center text-foreground mb-8">Наша команда</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {team.map((member, index) => (
-                <Card key={index} className="p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-1">{member.name}</h3>
-                  <p className="text-primary mb-2">{member.role}</p>
-                  <p className="text-muted-foreground text-sm">{member.bio}</p>
-                </Card>
-              ))}
+            <h2 className="text-3xl font-bold text-center text-foreground mb-8">О разработчике</h2>
+            <div className="max-w-2xl mx-auto">
+              <Card className="p-8 text-center">
+                <h3 className="text-2xl font-bold text-foreground mb-2">{developerInfo.name}</h3>
+                <p className="text-primary mb-4 text-lg">{developerInfo.role}</p>
+                <p className="text-muted-foreground leading-relaxed">{developerInfo.bio}</p>
+              </Card>
             </div>
           </div>
 
           {/* Story */}
           <Card className="p-8 mb-16">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Наша история</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-4">Как всё началось</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              SafeSurf VPN начался в 2020 году как небольшой проект группы энтузиастов, 
-              обеспокоенных растущими проблемами приватности в интернете. То, что начиналось 
-              как эксперимент, быстро переросло в полноценный сервис.
+              SafeSurf VPN начался в 2024 году как мой личный проект. Как разработчик, 
+              я был обеспокоен растущими проблемами приватности в интернете и решил создать 
+              решение, которым мог бы пользоваться сам.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Сегодня мы обслуживаем более миллиона пользователей по всему миру, предоставляя 
-              им доступ к безопасному и свободному интернету через наши высокоскоростные серверы.
+              Сегодня развиваю сервис, предоставляя пользователям доступ к безопасному 
+              и свободному интернету через высокоскоростные серверы и современные протоколы.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              Мы продолжаем развиваться, внедряя новые технологии и расширяя нашу инфраструктуру, 
+              Продолжаю развиваться, внедряя новые технологии и расширяя инфраструктуру, 
               чтобы оставаться на шаг впереди в борьбе за вашу приватность.
             </p>
           </Card>
@@ -175,7 +156,7 @@ export default function AboutPage() {
           {/* CTA */}
           <Card className="p-8 bg-primary/5 border-primary/20 text-center">
             <h3 className="text-2xl font-bold text-foreground mb-4">
-              Присоединяйтесь к нам
+              Присоединяйтесь ко мне
             </h3>
             <p className="text-muted-foreground mb-6">
               Станьте частью сообщества, которое ценит приватность и свободу в интернете

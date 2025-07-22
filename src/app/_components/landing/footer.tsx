@@ -20,8 +20,6 @@ const navigation = {
   company: [
     { name: "О нас", href: "/about" },
     { name: "Блог", href: "/blog" },
-    { name: "Пресс-кит", href: "/press" },
-    { name: "Карьера", href: "/careers" },
   ],
   legal: [
     { name: "Политика конфиденциальности", href: "/privacy" },
