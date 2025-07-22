@@ -19,6 +19,8 @@ export const env = createEnv({
       .default("development"),
     RESEND_API_KEY: z.string(),
     RESEND_FROM_EMAIL: z.string().email(),
+    YOOKASSA_SHOP_ID: z.string(),
+    YOOKASSA_SECRET_KEY: z.string(),
   },
 
   /**
@@ -42,6 +44,8 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+    YOOKASSA_SHOP_ID: process.env.YOOKASSA_SHOP_ID,
+    YOOKASSA_SECRET_KEY: process.env.YOOKASSA_SECRET_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

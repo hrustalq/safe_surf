@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { type Metadata } from "next";
 import Link from "next/link";
 import { Shield, ArrowLeft, Mail, MessageCircle, Clock, Send, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "~/components/ui/button";
@@ -83,7 +82,7 @@ export default function ContactPage() {
       
       setIsSuccess(true);
       setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch (err) {
+    } catch {
       setError("Произошла ошибка при отправке сообщения. Попробуйте позже.");
     } finally {
       setIsLoading(false);

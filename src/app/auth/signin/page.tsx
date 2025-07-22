@@ -42,7 +42,7 @@ export default function SignInPage() {
         router.push(callbackUrl);
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       setError("Произошла ошибка. Попробуйте позже.");
     } finally {
       setIsLoading(false);
@@ -53,7 +53,7 @@ export default function SignInPage() {
     setIsGoogleLoading(true);
     try {
       await signIn("google", { callbackUrl });
-    } catch (error) {
+    } catch {
       setError("Не удалось войти через Google");
       setIsGoogleLoading(false);
     }

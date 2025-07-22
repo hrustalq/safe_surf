@@ -69,11 +69,11 @@ export default function ServersPage() {
     },
   ];
 
-  const getLoadColor = (load: number) => {
-    if (load < 30) return "bg-green-500";
-    if (load < 60) return "bg-yellow-500";
-    return "bg-red-500";
-  };
+  // const getLoadColor = (load: number) => {
+  //   if (load < 30) return "bg-green-500";
+  //   if (load < 60) return "bg-yellow-500";
+  //   return "bg-red-500";
+  // };
 
   const getLoadText = (load: number) => {
     if (load < 30) return "Низкая";

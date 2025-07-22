@@ -8,6 +8,11 @@ import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import { z } from "zod";
+
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+});
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -29,10 +34,9 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ email }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Ошибка при отправке запроса");
-      }
+      const data = await response.json() as z.infer<typeof resetPasswordSchema>;
+      const result = resetPasswordSchema.safeParse(data);
+      if (!result.success) throw new Error(result.error.errors[0]?.message ?? "Ошибка при отправке запроса");
 
       setIsSuccess(true);
     } catch (error) {
@@ -57,7 +61,7 @@ export default function ResetPasswordPage() {
               Мы отправили инструкции по восстановлению пароля на адрес <strong>{email}</strong>
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Письмо может прийти в течение нескольких минут. Также проверьте папку "Спам".
+              Письмо может прийти в течение нескольких минут. Также проверьте папку &quot;Спам&quot;.
             </p>
             <Button asChild className="w-full">
               <Link href="/auth/signin">

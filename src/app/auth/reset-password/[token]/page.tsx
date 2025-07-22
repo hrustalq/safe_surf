@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Shield, Lock, Loader2, AlertCircle, CheckCircle } from "lucide-react";
@@ -9,14 +9,19 @@ import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import { z } from "zod";
 
 interface ResetPasswordPageProps {
-  params: {
-    token: string;
-  };
+  params: Promise<{ token: string }>;
 }
 
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: z.string().min(8),
+});
+
 export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
+  const { token } = use(params);
   const router = useRouter();
   const [formData, setFormData] = useState({
     password: "",
@@ -63,16 +68,14 @@ export default function ResetPasswordPage({ params }: ResetPasswordPageProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          token: params.token,
+          token,
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Ошибка при сбросе пароля");
-      }
+      const data = await response.json() as z.infer<typeof resetPasswordSchema>;
+      const result = resetPasswordSchema.safeParse(data);
+      if (!result.success) throw new Error(result.error.errors[0]?.message ?? "Ошибка при сбросе пароля");
 
       setIsSuccess(true);
       

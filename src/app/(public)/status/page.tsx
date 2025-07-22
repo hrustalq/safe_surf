@@ -28,7 +28,7 @@ interface ServerStatus {
 }
 
 export default function StatusPage() {
-  const [services, setServices] = useState<ServiceStatus[]>([
+  const [services] = useState<ServiceStatus[]>([
     { name: "VPN Серверы", status: "operational", uptime: 99.98, responseTime: 45, lastChecked: "2 минуты назад" },
     { name: "Веб-сайт", status: "operational", uptime: 99.99, responseTime: 120, lastChecked: "1 минуту назад" },
     { name: "API", status: "operational", uptime: 99.95, responseTime: 85, lastChecked: "30 секунд назад" },
@@ -37,7 +37,7 @@ export default function StatusPage() {
     { name: "Поддержка", status: "operational", uptime: 99.92, responseTime: 200, lastChecked: "5 минут назад" },
   ]);
 
-  const [servers, setServers] = useState<ServerStatus[]>([
+  const [servers] = useState<ServerStatus[]>([
     { location: "Германия", country: "DE", flag: "🇩🇪", status: "online", load: 23, ping: 15, uptime: 99.99 },
     { location: "США (Нью-Йорк)", country: "US", flag: "🇺🇸", status: "online", load: 52, ping: 85, uptime: 99.95 },
     { location: "Нидерланды", country: "NL", flag: "🇳🇱", status: "online", load: 18, ping: 12, uptime: 99.98 },

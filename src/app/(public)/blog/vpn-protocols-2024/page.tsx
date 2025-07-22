@@ -1,6 +1,6 @@
 import { type Metadata } from "next";
 import Link from "next/link";
-import { Shield, ArrowLeft, Calendar, Clock, User, Share2, CheckCircle, XCircle, Zap, Lock } from "lucide-react";
+import { Shield, ArrowLeft, Calendar, Clock, User, Share2, CheckCircle, XCircle, Zap } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -352,7 +352,7 @@ export default function VpnProtocolsComparisonPage() {
                 безопасности и функциональности, а WireGuard идеален для мобильных устройств.
               </p>
               <p className="mb-4">
-                Не существует "лучшего" протокола — есть наиболее подходящий для конкретной 
+                Не существует &quot;лучшего&quot; протокола — есть наиболее подходящий для конкретной 
                 задачи. Экспериментируйте с разными протоколами и выбирайте тот, который 
                 лучше всего работает в ваших условиях.
               </p>

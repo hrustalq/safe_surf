@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashSync } from "bcrypt-ts";
 import { z } from "zod";
 import { db } from "~/server/db";
 
@@ -10,12 +10,12 @@ const confirmResetSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json() as z.infer<typeof confirmResetSchema>;
     
     const result = confirmResetSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error.errors[0]?.message || "Invalid input" },
+        { error: result.error.errors[0]?.message ?? "Invalid input" },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     }
 
     // Hash the new password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = hashSync(password, 10);
 
     // Update user's password
     await db.user.update({

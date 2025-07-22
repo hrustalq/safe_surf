@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashSync } from "bcrypt-ts";
 import { z } from "zod";
 import { db } from "~/server/db";
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = hashSync(password, 10);
 
     // Create user
     const user = await db.user.create({

@@ -12,6 +12,20 @@ import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription } from "~/components/ui/alert";
 import { Separator } from "~/components/ui/separator";
 import { Checkbox } from "~/components/ui/checkbox";
+import { z } from "zod";
+
+const signupResponseSchema = z.object({
+  message: z.string(),
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+  }),
+});
+
+const errorResponseSchema = z.object({
+  error: z.string(),
+});
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -75,25 +89,32 @@ export default function SignUpPage() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Ошибка регистрации");
+        const errorData = await response.json() as unknown;
+        const errorResult = errorResponseSchema.safeParse(errorData);
+        throw new Error(errorResult.success ? errorResult.data.error : "Ошибка регистрации");
+      }
+
+      const data = await response.json() as unknown;
+      const result = signupResponseSchema.safeParse(data);
+      if (!result.success) {
+        console.error("Signup response validation error:", result.error);
+        throw new Error("Неверный формат ответа сервера");
       }
 
       // Auto sign in after successful registration
-      const result = await signIn("credentials", {
+      const signInResult = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
         redirect: false,
       });
 
-      if (result?.ok) {
+      if (signInResult?.ok) {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Произошла ошибка при регистрации");
+    } catch {
+      setError("Произошла ошибка при регистрации");
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +129,7 @@ export default function SignUpPage() {
     setIsGoogleLoading(true);
     try {
       await signIn("google", { callbackUrl: "/dashboard" });
-    } catch (error) {
+    } catch {
       setError("Не удалось зарегистрироваться через Google");
       setIsGoogleLoading(false);
     }

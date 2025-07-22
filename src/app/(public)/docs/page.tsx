@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Shield, ArrowLeft, Search, Book, Monitor, Smartphone, Router, Code, ExternalLink, ChevronRight } from "lucide-react";
+import { Shield, ArrowLeft, Search, Book, Monitor, Router, Code, ExternalLink, ChevronRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
