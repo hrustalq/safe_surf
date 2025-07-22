@@ -237,7 +237,12 @@ async function addClientTo3XUIInbounds(
   clientId: string, 
   clientEmail: string, 
   subscriptionId: string,
-  inbounds: Inbound[]
+  inbounds: Inbound[],
+  limits: {
+    limitIp: number;
+    totalGB: number;
+    expiryTime: number;
+  }
 ): Promise<void> {
   if (inbounds.length === 0) {
     throw new Error("No inbounds provided to add client to");
@@ -252,9 +257,9 @@ async function addClientTo3XUIInbounds(
       const clientData = {
         id: clientId,
         email: uniqueEmail,
-        limitIp: 2, // Trial/default limit
-        totalGB: 5, // 5GB limit
-        expiryTime: Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days
+        limitIp: limits.limitIp,
+        totalGB: limits.totalGB,
+        expiryTime: limits.expiryTime,
         enable: true,
         tgId: "",
         subId: subscriptionId,
@@ -329,7 +334,7 @@ export async function generateSubscriptionConfigs(subscriptionId: string): Promi
 
   const subscription = await db.subscription.findUnique({
     where: { id: subscriptionId },
-    include: { user: true },
+    include: { user: true, plan: true },
   });
 
   if (!subscription || !subscription.xUIClientId || !subscription.xUIClientEmail) {
@@ -380,12 +385,20 @@ export async function generateSubscriptionConfigs(subscriptionId: string): Promi
       console.log(`Client not found in any inbounds. Attempting to add to ${eligibleInbounds.length} eligible inbounds...`);
       
       try {
+        // Calculate limits from subscription plan
+        const limits = {
+          limitIp: subscription.plan.maxDevices,
+          totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024) : 0, // Convert bytes to GB
+          expiryTime: subscription.endDate.getTime(),
+        };
+        
         await addClientTo3XUIInbounds(
           client, 
           subscription.xUIClientId, 
           subscription.xUIClientEmail, 
           subscriptionId,
-          eligibleInbounds
+          eligibleInbounds,
+          limits
         );
         
         // Refetch inbounds after adding client

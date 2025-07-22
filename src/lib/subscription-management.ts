@@ -292,8 +292,8 @@ export async function handleSubscriptionCreation(subscriptionId: string): Promis
 
     // Calculate limits based on plan
     const limits: SubscriptionLimits = {
-      limitIp: 2, // Default limit
-      totalGB: Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024), // Convert to GB
+      limitIp: subscription.plan.maxDevices, // Use plan's max devices
+      totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024) : 0, // Convert bytes to GB, 0 = unlimited
       expiryTime: subscription.endDate.getTime(),
     };
 
@@ -355,8 +355,8 @@ export async function handleSubscriptionUpdate(subscriptionId: string): Promise<
 
     // Calculate new limits based on updated plan
     const newLimits: SubscriptionLimits = {
-      limitIp: 2, // Default limit
-      totalGB: Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024), // Convert to GB
+      limitIp: subscription.plan.maxDevices, // Use plan's max devices
+      totalGB: subscription.plan.maxBandwidth ? Number(subscription.plan.maxBandwidth) / (1024 * 1024 * 1024) : 0, // Convert bytes to GB, 0 = unlimited
       expiryTime: subscription.endDate.getTime(),
     };
 
