@@ -449,15 +449,18 @@ export async function generateSubscriptionConfigs(subscriptionId: string): Promi
       };
 
       try {
+        // Create a clean remark similar to 3x-ui panel format - keep it simple
+        const cleanRemark = `${inbound.remark}-${inbound.id}-${subscription.xUIClientEmail}`;
+        
         const configUrl = generateClientUrl(
           inbound.protocol,
           clientConfig,
           serverHost,
           inbound.port,
-          `SafeSurf ${inbound.remark}`
+          cleanRemark
         );
         
-        console.log(`Generated ${inbound.protocol.toUpperCase()} config URL for inbound ${inbound.id}:`, configUrl.substring(0, 50) + '...');
+        console.log(`Generated ${inbound.protocol.toUpperCase()} config URL for inbound ${inbound.id}`);
 
         configUrls.push({
           protocol: inbound.protocol.toUpperCase(),

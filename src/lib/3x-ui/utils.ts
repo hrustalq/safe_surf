@@ -331,7 +331,7 @@ export function generateClientUrl(
   port: number,
   remark?: string
 ): string {
-  const encodedRemark = remark ? encodeURIComponent(remark) : "";
+  // Don't pre-encode remark here - let each protocol handler do its own encoding
   
   switch (protocol.toLowerCase()) {
     case "vmess": {
@@ -401,10 +401,10 @@ export function generateClientUrl(
           params.set('tls', 'true');
         }
         
-        return `ss://${encoded}@${server}:${port}/?${params.toString()}#${encodedRemark}`;
+        return `ss://${encoded}@${server}:${port}/?${params.toString()}#${remark ? encodeURIComponent(remark) : ''}`;
       }
       
-      return `ss://${encoded}@${server}:${port}#${encodedRemark}`;
+      return `ss://${encoded}@${server}:${port}#${remark ? encodeURIComponent(remark) : ''}`;
     }
     
     default:
@@ -524,11 +524,6 @@ function generateVlessUrl(
   // Basic parameters - NOTE: encryption is NOT added for VLESS (it's implicit as "none")
   params.set("type", network);                           // Network type
   params.set("security", security);                      // Security layer
-  
-  // Add flow for XTLS/Vision (important for performance)
-  if (config.flow) {
-    params.set("flow", config.flow);
-  }
 
   // Handle different network types according to documentation
   switch (network) {
@@ -584,8 +579,8 @@ function generateVlessUrl(
       params.set("fp", streamSettings.tlsSettings.fingerprint);
     }
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
-      // Join ALPN values with commas, properly encoded
-      params.set("alpn", streamSettings.tlsSettings.alpn.join("%2C"));
+      // Join ALPN values with encoded commas - URLSearchParams will handle the encoding
+      params.set("alpn", streamSettings.tlsSettings.alpn.join(","));
     }
     if (streamSettings.tlsSettings.serverName) {
       params.set("sni", streamSettings.tlsSettings.serverName);
@@ -598,7 +593,7 @@ function generateVlessUrl(
       params.set("fp", streamSettings.tlsSettings.fingerprint);
     }
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
-      params.set("alpn", streamSettings.tlsSettings.alpn.join("%2C"));
+      params.set("alpn", streamSettings.tlsSettings.alpn.join(","));
     }
     if (streamSettings.tlsSettings.serverName) {
       params.set("sni", streamSettings.tlsSettings.serverName);
@@ -616,12 +611,15 @@ function generateVlessUrl(
     if (settings?.fingerprint) {
       params.set("fp", settings.fingerprint);
     }
-    if (settings?.serverName) {
+    
+    // SNI should come from serverNames array, not settings.serverName (which is often empty)
+    if (realitySettings.serverNames && realitySettings.serverNames.length > 0) {
+      const serverName = realitySettings.serverNames[0];
+      if (serverName) {
+        params.set("sni", serverName);
+      }
+    } else if (settings?.serverName) {
       params.set("sni", settings.serverName);
-    }
-    if (settings?.spiderX) {
-      // SpiderX should be URL encoded once
-      params.set("spx", "%2F"); // This is typically "/" encoded
     }
     
     // Use the first shortId if available
@@ -631,6 +629,16 @@ function generateVlessUrl(
         params.set("sid", shortId);
       }
     }
+    
+    // SpiderX - don't encode manually as URLSearchParams will encode it
+    if (settings?.spiderX) {
+      params.set("spx", settings.spiderX); // Let URLSearchParams handle encoding
+    }
+  }
+
+  // Add flow for XTLS/Vision at the END (to match panel order)
+  if (config.flow) {
+    params.set("flow", config.flow);
   }
 
   // Build final URL with proper encoding

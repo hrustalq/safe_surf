@@ -39,15 +39,46 @@ export async function GET(
       return new NextResponse("Subscription expired", { status: 403 });
     }
 
-    // Get stored VPN configurations
+    // Generate fresh VPN configurations instead of using potentially corrupted stored ones
     let configUrls: string[] = [];
     
-    if (subscription.configUrls) {
-      try {
-        const storedConfigs = JSON.parse(subscription.configUrls) as Array<{protocol: string; url: string; name: string}>;
-        configUrls = storedConfigs.map(config => config.url);
-      } catch (parseError) {
-        console.error("Error parsing stored configs:", parseError);
+    try {
+      // Import the config generation function
+      const { generateSubscriptionConfigs } = await import("~/lib/subscription-utils");
+      const freshConfigs = await generateSubscriptionConfigs(subscription.id);
+      configUrls = freshConfigs.configUrls.map(config => {
+        // Ensure URLs are not double-encoded by decoding and re-encoding once
+        const url = config.url;
+        const hashIndex = url.indexOf('#');
+        if (hashIndex !== -1) {
+          const baseUrl = url.substring(0, hashIndex + 1);
+          const remark = url.substring(hashIndex + 1);
+          try {
+            // Decode the remark and re-encode it once to prevent double encoding
+            const decodedRemark = decodeURIComponent(remark);
+            const cleanUrl = baseUrl + encodeURIComponent(decodedRemark);
+            return cleanUrl;
+          } catch (e) {
+            // If decoding fails, return original URL
+            return url;
+          }
+        }
+        return url;
+      });
+      
+      console.log(`Generated ${configUrls.length} fresh config URLs for subscription ${subscription.id}`);
+    } catch (configError) {
+      console.error("Error generating fresh configs:", configError);
+      
+      // Fallback to stored configs if fresh generation fails
+      if (subscription.configUrls) {
+        try {
+          const storedConfigs = JSON.parse(subscription.configUrls) as Array<{protocol: string; url: string; name: string}>;
+          configUrls = storedConfigs.map(config => config.url);
+          console.log(`Falling back to stored configs: ${configUrls.length} URLs`);
+        } catch (parseError) {
+          console.error("Error parsing stored configs:", parseError);
+        }
       }
     }
 
