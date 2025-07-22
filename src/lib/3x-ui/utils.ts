@@ -343,19 +343,67 @@ export function generateClientUrl(
     }
     
     case "trojan": {
-      const params = new URLSearchParams({
-        security: config.streamSettings?.security ?? config.security ?? "tls",
-        type: config.streamSettings?.network ?? config.network ?? "tcp",
-      });
+      const streamSettings = config.streamSettings;
+      const network = streamSettings?.network ?? config.network ?? "tcp";
+      const security = streamSettings?.security ?? config.security ?? "tls";
       
-      if (remark) params.set("name", remark);
+      const params = new URLSearchParams();
+      params.set("security", security);
+      params.set("type", network);
       
-      return `trojan://${config.password}@${server}:${port}?${params.toString()}`;
+      // Handle network-specific parameters
+      if (network === "ws" && streamSettings?.wsSettings) {
+        params.set("path", encodeURIComponent(streamSettings.wsSettings.path ?? "/"));
+        if (streamSettings.wsSettings.host) {
+          params.set("host", streamSettings.wsSettings.host);
+        }
+      } else if (network === "grpc" && streamSettings?.grpcSettings) {
+        params.set("serviceName", streamSettings.grpcSettings.serviceName ?? "");
+        params.set("mode", streamSettings.grpcSettings.multiMode ? "multi" : "gun");
+      }
+      
+      // Handle TLS settings
+      if (security === "tls" && streamSettings?.tlsSettings) {
+        if (streamSettings.tlsSettings.serverName) {
+          params.set("sni", streamSettings.tlsSettings.serverName);
+        }
+        if (streamSettings.tlsSettings.fingerprint) {
+          params.set("fp", streamSettings.tlsSettings.fingerprint);
+        }
+      }
+      
+      const baseUrl = `trojan://${config.password}@${server}:${port}`;
+      const queryString = params.toString();
+      
+      if (remark) {
+        return `${baseUrl}?${queryString}#${encodeURIComponent(remark)}`;
+      }
+      
+      return `${baseUrl}?${queryString}`;
     }
     
     case "shadowsocks": {
       const auth = `${config.method}:${config.password}`;
-      const encoded = Buffer.from(auth).toString('base64');
+      const encoded = Buffer.from(auth, 'utf8').toString('base64');
+      
+      // Handle SIP002 format if plugin is needed
+      if (config.streamSettings?.wsSettings) {
+        const params = new URLSearchParams();
+        params.set('plugin', 'v2ray-plugin');
+        params.set('obfs', 'websocket');
+        if (config.streamSettings.wsSettings.host) {
+          params.set('obfs-host', config.streamSettings.wsSettings.host);
+        }
+        if (config.streamSettings.wsSettings.path) {
+          params.set('path', config.streamSettings.wsSettings.path);
+        }
+        if (config.streamSettings.security === 'tls') {
+          params.set('tls', 'true');
+        }
+        
+        return `ss://${encoded}@${server}:${port}/?${params.toString()}#${encodedRemark}`;
+      }
+      
       return `ss://${encoded}@${server}:${port}#${encodedRemark}`;
     }
     
@@ -366,6 +414,7 @@ export function generateClientUrl(
 
 /**
  * Generate VMESS configuration URL
+ * Based on VMess JSON format from docs/HOW_TO_FORM_CONNECTION.md
  */
 function generateVmessUrl(
   config: ClientConfig,
@@ -377,53 +426,88 @@ function generateVmessUrl(
   const network = streamSettings?.network ?? config.network ?? "tcp";
   const security = streamSettings?.security ?? config.security ?? "none";
   
+  // VMess JSON config according to the documentation
   const vmessConfig: Record<string, string | number> = {
-    v: "2",
-    ps: remark ?? "",
-    add: server,
-    port: port.toString(),
-    id: config.id,
-    aid: config.alterId?.toString() ?? "0",
-    scy: "auto",
-    net: network,
-    type: "none",
-    host: "",
-    path: "",
-    tls: security === "tls" ? "tls" : "",
-    sni: "",
-    fp: "",
-    alpn: "",
+    v: "2",                                    // Version (required)
+    ps: remark ?? "",                          // Remark/Name (required)
+    add: server,                               // Server address (required)
+    port: port.toString(),                     // Port (required as string)
+    id: config.id,                            // User UUID (required)
+    aid: config.alterId?.toString() ?? "0",   // AlterID (required)
+    scy: "auto",                              // Encryption (optional)
+    net: network,                             // Network type (required)
+    type: "none",                             // Header type (required)
+    host: "",                                 // Host header (conditional)
+    path: "",                                 // Path (conditional)
+    tls: security === "tls" ? "tls" : "none", // Security layer (fixed: was empty string)
+    sni: "",                                  // Server Name Indication
+    alpn: "",                                 // ALPN
   };
 
-  // Handle different network types
-  if (network === "ws" && streamSettings?.wsSettings) {
-    vmessConfig.path = streamSettings.wsSettings.path ?? "/";
-    vmessConfig.host = streamSettings.wsSettings.host ?? "";
-  } else if (network === "grpc" && streamSettings?.grpcSettings) {
-    vmessConfig.path = streamSettings.grpcSettings.serviceName ?? "";
-    vmessConfig.type = streamSettings.grpcSettings.multiMode ? "multi" : "gun";
-  } else if (network === "http" && streamSettings?.httpSettings) {
-    vmessConfig.path = streamSettings.httpSettings.path ?? "/";
-    if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
-      vmessConfig.host = streamSettings.httpSettings.host[0] ?? "";
-    }
+  // Handle different network types according to documentation
+  switch (network) {
+    case "ws":
+      if (streamSettings?.wsSettings) {
+        vmessConfig.path = streamSettings.wsSettings.path ?? "/";
+        vmessConfig.host = streamSettings.wsSettings.host ?? "";
+      }
+      break;
+      
+    case "grpc":
+      if (streamSettings?.grpcSettings) {
+        vmessConfig.path = streamSettings.grpcSettings.serviceName ?? "";
+        vmessConfig.type = streamSettings.grpcSettings.multiMode ? "multi" : "gun";
+      }
+      break;
+      
+    case "h2":
+    case "http":
+      if (streamSettings?.httpSettings) {
+        vmessConfig.path = streamSettings.httpSettings.path ?? "/";
+        if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
+          vmessConfig.host = streamSettings.httpSettings.host.join(",");
+        }
+      }
+      break;
+      
+    case "kcp":
+      // mKCP settings from stream settings
+      if (streamSettings?.tcpSettings?.header?.type) {
+        vmessConfig.type = streamSettings.tcpSettings.header.type;
+      }
+      break;
+      
+    case "quic":
+      // QUIC settings would go here if supported
+      break;
+      
+    case "tcp":
+    default:
+      // TCP header type
+      if (streamSettings?.tcpSettings?.header?.type) {
+        vmessConfig.type = streamSettings.tcpSettings.header.type;
+      }
+      break;
   }
 
   // Handle TLS settings
   if (security === "tls" && streamSettings?.tlsSettings) {
     vmessConfig.sni = streamSettings.tlsSettings.serverName ?? "";
-    vmessConfig.fp = streamSettings.tlsSettings.fingerprint ?? "chrome";
+    vmessConfig.fp = streamSettings.tlsSettings.fingerprint ?? "";
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
       vmessConfig.alpn = streamSettings.tlsSettings.alpn.join(",");
     }
   }
 
-  const encoded = Buffer.from(JSON.stringify(vmessConfig)).toString('base64');
+  // Ensure proper JSON formatting and base64 encoding
+  const jsonString = JSON.stringify(vmessConfig, null, 0); // No pretty printing
+  const encoded = Buffer.from(jsonString, 'utf8').toString('base64');
   return `vmess://${encoded}`;
 }
 
 /**
  * Generate VLESS configuration URL
+ * Based on VLESS URI format from docs/HOW_TO_FORM_CONNECTION.md
  */
 function generateVlessUrl(
   config: ClientConfig,
@@ -437,42 +521,92 @@ function generateVlessUrl(
   
   const params = new URLSearchParams();
   
-  // Basic parameters
-  params.set("encryption", config.encryption ?? "none");
-  params.set("type", network);
-  params.set("security", security);
+  // Basic parameters (according to VLESS documentation)
+  params.set("encryption", config.encryption ?? "none"); // Required: always "none" for VLESS
+  params.set("type", network);                           // Network type
+  params.set("security", security);                      // Security layer
   
-  // Add flow for XTLS
+  // Add flow for XTLS (important for performance)
   if (config.flow) {
     params.set("flow", config.flow);
   }
 
-  // Handle different network types
-  if (network === "ws" && streamSettings?.wsSettings) {
-    params.set("path", streamSettings.wsSettings.path ?? "/");
-    if (streamSettings.wsSettings.host) {
-      params.set("host", streamSettings.wsSettings.host);
-    }
-  } else if (network === "grpc" && streamSettings?.grpcSettings) {
-    params.set("serviceName", streamSettings.grpcSettings.serviceName ?? "");
-    params.set("mode", streamSettings.grpcSettings.multiMode ? "multi" : "gun");
-  } else if (network === "http" && streamSettings?.httpSettings) {
-    params.set("path", streamSettings.httpSettings.path ?? "/");
-    if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
-      params.set("host", streamSettings.httpSettings.host.join(","));
-    }
+  // Handle different network types according to documentation
+  switch (network) {
+    case "ws":
+      if (streamSettings?.wsSettings) {
+        const path = streamSettings.wsSettings.path ?? "/";
+        params.set("path", encodeURIComponent(path)); // Properly encode path
+        if (streamSettings.wsSettings.host) {
+          params.set("host", streamSettings.wsSettings.host);
+        }
+      }
+      break;
+      
+    case "grpc":
+      if (streamSettings?.grpcSettings) {
+        params.set("serviceName", streamSettings.grpcSettings.serviceName ?? "");
+        params.set("mode", streamSettings.grpcSettings.multiMode ? "multi" : "gun");
+      }
+      break;
+      
+    case "h2":
+    case "http":
+      if (streamSettings?.httpSettings) {
+        const path = streamSettings.httpSettings.path ?? "/";
+        params.set("path", encodeURIComponent(path)); // Properly encode path
+        if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
+          params.set("host", streamSettings.httpSettings.host.join(","));
+        }
+      }
+      break;
+      
+    case "kcp":
+      // mKCP header type
+      if (streamSettings?.tcpSettings?.header?.type) {
+        params.set("headerType", streamSettings.tcpSettings.header.type);
+      }
+      break;
+      
+    case "quic":
+      // QUIC settings
+      if (streamSettings?.realitySettings) { // Using reality settings for QUIC security
+        params.set("quicSecurity", "none"); // Default
+        if (streamSettings.realitySettings.settings?.publicKey) {
+          params.set("key", streamSettings.realitySettings.settings.publicKey);
+        }
+      }
+      break;
   }
 
   // Handle TLS settings
   if (security === "tls" && streamSettings?.tlsSettings) {
-    params.set("sni", streamSettings.tlsSettings.serverName ?? "");
-    params.set("fp", streamSettings.tlsSettings.fingerprint ?? "chrome");
+    if (streamSettings.tlsSettings.serverName) {
+      params.set("sni", streamSettings.tlsSettings.serverName);
+    }
+    if (streamSettings.tlsSettings.fingerprint) {
+      params.set("fp", streamSettings.tlsSettings.fingerprint);
+    }
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
-      params.set("alpn", streamSettings.tlsSettings.alpn.join("%2C"));
+      // Properly encode ALPN values
+      params.set("alpn", streamSettings.tlsSettings.alpn.join(","));
     }
   }
 
-  // Handle Reality settings
+  // Handle XTLS settings (for high performance)
+  if (security === "xtls" && streamSettings?.tlsSettings) {
+    if (streamSettings.tlsSettings.serverName) {
+      params.set("sni", streamSettings.tlsSettings.serverName);
+    }
+    if (streamSettings.tlsSettings.fingerprint) {
+      params.set("fp", streamSettings.tlsSettings.fingerprint);
+    }
+    if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
+      params.set("alpn", streamSettings.tlsSettings.alpn.join(","));
+    }
+  }
+
+  // Handle Reality settings (advanced obfuscation)
   if (security === "reality" && streamSettings?.realitySettings) {
     const realitySettings = streamSettings.realitySettings;
     const settings = realitySettings.settings;
@@ -487,8 +621,7 @@ function generateVlessUrl(
       params.set("sni", settings.serverName);
     }
     if (settings?.spiderX) {
-      // Don't double-encode spiderX - it should be URL encoded once, not twice
-      params.set("spx", settings.spiderX);
+      params.set("spx", encodeURIComponent(settings.spiderX)); // Proper encoding
     }
     
     // Use the first shortId if available
@@ -500,12 +633,15 @@ function generateVlessUrl(
     }
   }
 
-  // Add remark as fragment
+  // Build final URL with proper encoding
+  const baseUrl = `vless://${config.id}@${server}:${port}`;
+  const queryString = params.toString();
+  
   if (remark) {
-    return `vless://${config.id}@${server}:${port}?${params.toString()}#${encodeURIComponent(remark)}`;
+    return `${baseUrl}?${queryString}#${encodeURIComponent(remark)}`;
   }
   
-  return `vless://${config.id}@${server}:${port}?${params.toString()}`;
+  return `${baseUrl}?${queryString}`;
 }
 
 // Types for parsed URL result

@@ -95,6 +95,19 @@ export function hasInboundPrefix(email: string): boolean {
  */
 export async function generateQRCode(configUrl: string): Promise<string> {
   try {
+    // Validate URL format before generating QR
+    if (!configUrl || typeof configUrl !== 'string') {
+      throw new Error('Invalid config URL provided');
+    }
+    
+    // Check for supported protocols
+    const supportedProtocols = ['vmess://', 'vless://', 'trojan://', 'ss://'];
+    const hasValidProtocol = supportedProtocols.some(protocol => configUrl.startsWith(protocol));
+    
+    if (!hasValidProtocol) {
+      throw new Error(`Unsupported protocol in URL: ${configUrl.split('://')[0]}`);
+    }
+    
     return await QRCode.toDataURL(configUrl, {
       margin: 1,
       color: {
@@ -102,10 +115,11 @@ export async function generateQRCode(configUrl: string): Promise<string> {
         light: '#FFFFFF'
       },
       width: 256,
+      errorCorrectionLevel: 'M', // Better error correction for long URLs
     });
   } catch (error) {
-    console.error('Error generating QR code:', error);
-    throw new Error('Failed to generate QR code');
+    console.error('Error generating QR code for URL:', configUrl, error);
+    throw new Error(`Failed to generate QR code: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -422,40 +436,52 @@ export async function generateSubscriptionConfigs(subscriptionId: string): Promi
       }
 
       // Use the ACTUAL client UUID from the inbound, not our stored one
+      // Map client data and stream settings properly
       const clientConfig = {
         id: clientInInbound.id,
-        flow: clientInInbound.flow || "",
+        flow: clientInInbound.flow ?? "",
         encryption: "none",
         streamSettings: inbound.streamSettings,
+        // Add legacy support for older parsing
+        network: inbound.streamSettings?.network,
+        security: inbound.streamSettings?.security,
+        alterId: 0, // Default alterId for VMess
       };
 
-      const configUrl = generateClientUrl(
-        inbound.protocol,
-        clientConfig,
-        serverHost,
-        inbound.port,
-        `SafeSurf ${inbound.remark}`
-      );
+      try {
+        const configUrl = generateClientUrl(
+          inbound.protocol,
+          clientConfig,
+          serverHost,
+          inbound.port,
+          `SafeSurf ${inbound.remark}`
+        );
+        
+        console.log(`Generated ${inbound.protocol.toUpperCase()} config URL for inbound ${inbound.id}:`, configUrl.substring(0, 50) + '...');
 
-      configUrls.push({
-        protocol: inbound.protocol.toUpperCase(),
-        url: configUrl,
-        name: inbound.remark,
-      });
+        configUrls.push({
+          protocol: inbound.protocol.toUpperCase(),
+          url: configUrl,
+          name: inbound.remark,
+        });
 
-      // Generate QR code
-      const qrCode = await generateQRCode(configUrl);
-      qrCodes.push({
-        protocol: inbound.protocol.toUpperCase(),
-        qrCode,
-      });
+        // Generate QR code
+        const qrCode = await generateQRCode(configUrl);
+        qrCodes.push({
+          protocol: inbound.protocol.toUpperCase(),
+          qrCode,
+        });
 
-      serverDetails.push({
-        host: serverHost,
-        port: inbound.port,
-        protocol: inbound.protocol,
-        inboundId: inbound.id ?? 0,
-      });
+        serverDetails.push({
+          host: serverHost,
+          port: inbound.port,
+          protocol: inbound.protocol,
+          inboundId: inbound.id ?? 0,
+        });
+      } catch (urlError) {
+        console.error(`Failed to generate config URL for inbound ${inbound.id}:`, urlError);
+        // Continue with next inbound instead of failing completely
+      }
     }
 
     return { configUrls, qrCodes, serverDetails };
