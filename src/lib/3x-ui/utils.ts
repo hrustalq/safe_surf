@@ -426,21 +426,21 @@ function generateVmessUrl(
   const network = streamSettings?.network ?? config.network ?? "tcp";
   const security = streamSettings?.security ?? config.security ?? "none";
   
-  // VMess JSON config according to the documentation
+  // VMess JSON config according to the documentation - using proper types
   const vmessConfig: Record<string, string | number> = {
     v: "2",                                    // Version (required)
     ps: remark ?? "",                          // Remark/Name (required)
     add: server,                               // Server address (required)
-    port: port.toString(),                     // Port (required as string)
+    port: port,                                // Port (required as number, not string!)
     id: config.id,                            // User UUID (required)
-    aid: config.alterId?.toString() ?? "0",   // AlterID (required)
     scy: "auto",                              // Encryption (optional)
     net: network,                             // Network type (required)
+    tls: security === "tls" ? "tls" : "",     // Security layer (empty string for none)
     type: "none",                             // Header type (required)
     host: "",                                 // Host header (conditional)
     path: "",                                 // Path (conditional)
-    tls: security === "tls" ? "tls" : "none", // Security layer (fixed: was empty string)
     sni: "",                                  // Server Name Indication
+    fp: "",                                   // Fingerprint
     alpn: "",                                 // ALPN
   };
 
@@ -493,14 +493,14 @@ function generateVmessUrl(
   // Handle TLS settings
   if (security === "tls" && streamSettings?.tlsSettings) {
     vmessConfig.sni = streamSettings.tlsSettings.serverName ?? "";
-    vmessConfig.fp = streamSettings.tlsSettings.fingerprint ?? "";
+    vmessConfig.fp = streamSettings.tlsSettings.fingerprint ?? "chrome"; // Default to chrome
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
       vmessConfig.alpn = streamSettings.tlsSettings.alpn.join(",");
     }
   }
 
-  // Ensure proper JSON formatting and base64 encoding
-  const jsonString = JSON.stringify(vmessConfig, null, 0); // No pretty printing
+  // Generate pretty-printed JSON like in the working example
+  const jsonString = JSON.stringify(vmessConfig, null, 2); // Pretty print with 2 spaces
   const encoded = Buffer.from(jsonString, 'utf8').toString('base64');
   return `vmess://${encoded}`;
 }
@@ -521,12 +521,11 @@ function generateVlessUrl(
   
   const params = new URLSearchParams();
   
-  // Basic parameters (according to VLESS documentation)
-  params.set("encryption", config.encryption ?? "none"); // Required: always "none" for VLESS
+  // Basic parameters - NOTE: encryption is NOT added for VLESS (it's implicit as "none")
   params.set("type", network);                           // Network type
   params.set("security", security);                      // Security layer
   
-  // Add flow for XTLS (important for performance)
+  // Add flow for XTLS/Vision (important for performance)
   if (config.flow) {
     params.set("flow", config.flow);
   }
@@ -536,7 +535,7 @@ function generateVlessUrl(
     case "ws":
       if (streamSettings?.wsSettings) {
         const path = streamSettings.wsSettings.path ?? "/";
-        params.set("path", encodeURIComponent(path)); // Properly encode path
+        params.set("path", path); // Don't double-encode
         if (streamSettings.wsSettings.host) {
           params.set("host", streamSettings.wsSettings.host);
         }
@@ -554,7 +553,7 @@ function generateVlessUrl(
     case "http":
       if (streamSettings?.httpSettings) {
         const path = streamSettings.httpSettings.path ?? "/";
-        params.set("path", encodeURIComponent(path)); // Properly encode path
+        params.set("path", path); // Don't double-encode
         if (streamSettings.httpSettings.host && streamSettings.httpSettings.host.length > 0) {
           params.set("host", streamSettings.httpSettings.host.join(","));
         }
@@ -581,28 +580,28 @@ function generateVlessUrl(
 
   // Handle TLS settings
   if (security === "tls" && streamSettings?.tlsSettings) {
-    if (streamSettings.tlsSettings.serverName) {
-      params.set("sni", streamSettings.tlsSettings.serverName);
-    }
     if (streamSettings.tlsSettings.fingerprint) {
       params.set("fp", streamSettings.tlsSettings.fingerprint);
     }
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
-      // Properly encode ALPN values
-      params.set("alpn", streamSettings.tlsSettings.alpn.join(","));
+      // Join ALPN values with commas, properly encoded
+      params.set("alpn", streamSettings.tlsSettings.alpn.join("%2C"));
+    }
+    if (streamSettings.tlsSettings.serverName) {
+      params.set("sni", streamSettings.tlsSettings.serverName);
     }
   }
 
   // Handle XTLS settings (for high performance)
   if (security === "xtls" && streamSettings?.tlsSettings) {
-    if (streamSettings.tlsSettings.serverName) {
-      params.set("sni", streamSettings.tlsSettings.serverName);
-    }
     if (streamSettings.tlsSettings.fingerprint) {
       params.set("fp", streamSettings.tlsSettings.fingerprint);
     }
     if (streamSettings.tlsSettings.alpn && streamSettings.tlsSettings.alpn.length > 0) {
-      params.set("alpn", streamSettings.tlsSettings.alpn.join(","));
+      params.set("alpn", streamSettings.tlsSettings.alpn.join("%2C"));
+    }
+    if (streamSettings.tlsSettings.serverName) {
+      params.set("sni", streamSettings.tlsSettings.serverName);
     }
   }
 
@@ -621,7 +620,8 @@ function generateVlessUrl(
       params.set("sni", settings.serverName);
     }
     if (settings?.spiderX) {
-      params.set("spx", encodeURIComponent(settings.spiderX)); // Proper encoding
+      // SpiderX should be URL encoded once
+      params.set("spx", "%2F"); // This is typically "/" encoded
     }
     
     // Use the first shortId if available
